@@ -370,13 +370,22 @@ tailwind.config = {
                 <!-- Dynamic text indicating highest voted player -->
             </div>
 
-            <div class="w-full mt-1 flex flex-col gap-2.5">
+            <!-- Single Highest Vote Action Container -->
+            <div id="single-vote-options-container" class="w-full mt-1 flex flex-col gap-2.5">
                 <div class="text-[10px] sm:text-xs font-mono text-warning text-center font-bold uppercase tracking-wider mb-0.5">Judge Final Confirmation Required</div>
                 <button id="btn-eliminate-single" onclick="VotingEngine.confirmSingleElimination()" class="w-full bg-danger hover:bg-danger/90 text-secondary font-bold py-3.5 px-4 rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-xs sm:text-sm uppercase tracking-wider touch-manipulation">
                     <i class="fa-solid fa-skull"></i> ELIMINATE <span id="btn-eliminate-single-name">PLAYER</span>
                 </button>
                 <button id="btn-single-no-elimination" onclick="VotingEngine.confirmSingleNoElimination()" class="w-full bg-card hover:bg-border text-text-primary border border-border font-bold py-3.5 px-4 rounded-xl transition flex items-center justify-center gap-2 text-xs sm:text-sm uppercase tracking-wider touch-manipulation">
                     <i class="fa-solid fa-shield-heart text-success"></i> NO ELIMINATION
+                </button>
+            </div>
+
+            <!-- Single Vote Continue to Night Container (Shown after No Elimination is chosen) -->
+            <div id="single-vote-continue-container" class="w-full mt-1 hidden flex flex-col gap-2.5">
+                <div class="text-[10px] sm:text-xs font-mono text-success text-center font-bold uppercase tracking-wider mb-0.5">No Elimination Recorded</div>
+                <button onclick="VotingEngine.executeContinueToNightFromModal('vote-result-modal-backdrop')" class="w-full bg-success hover:bg-success/90 text-secondary font-bold py-3.5 px-4 rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-xs sm:text-sm uppercase tracking-wider touch-manipulation">
+                    <i class="fa-solid fa-moon"></i> CONTINUE TO NIGHT
                 </button>
             </div>
         </div>
@@ -418,6 +427,14 @@ tailwind.config = {
                 </button>
                 <button id="btn-no-elimination" onclick="VotingEngine.confirmNoElimination()" class="w-full bg-card hover:bg-border text-text-primary border border-border font-bold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2 text-xs sm:text-sm uppercase touch-manipulation">
                     <i class="fa-solid fa-shield-heart text-success"></i> NO ELIMINATION
+                </button>
+            </div>
+
+            <!-- WHEEL CONTINUE TO NIGHT CONTAINER (Shown after No Elimination is chosen from spin) -->
+            <div id="wheel-continue-container" class="w-full mt-2 hidden flex flex-col gap-2">
+                <div class="text-[10px] sm:text-xs font-mono text-success text-center font-bold uppercase tracking-wider mb-0.5">No Elimination Recorded</div>
+                <button onclick="VotingEngine.executeContinueToNightFromModal('wheel-modal-backdrop')" class="w-full bg-success hover:bg-success/90 text-secondary font-bold py-3 px-4 rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-xs sm:text-sm uppercase tracking-wider touch-manipulation">
+                    <i class="fa-solid fa-moon"></i> CONTINUE TO NIGHT
                 </button>
             </div>
 
@@ -1735,6 +1752,11 @@ tailwind.config = {
 
                 detailsContainer.innerHTML = detailsHtml;
                 document.getElementById('btn-eliminate-single-name').innerText = player.name.toUpperCase();
+                
+                // Reset view state in modal
+                document.getElementById('single-vote-options-container').classList.remove('hidden');
+                document.getElementById('single-vote-continue-container').classList.add('hidden');
+
                 document.getElementById('vote-result-modal-backdrop').classList.remove('hidden');
             },
 
@@ -1759,14 +1781,16 @@ tailwind.config = {
             },
 
             confirmSingleNoElimination: function() {
-                document.getElementById('vote-result-modal-backdrop').classList.add('hidden');
+                const player = GameState.singleSelectedPlayer;
                 GameState.eventLog.unshift({
                     round: GameState.currentRound, phase: 'NO ELIMINATION',
-                    text: `<strong>Day ${GameState.currentRound} Vote:</strong> Judge chose No Elimination.`,
+                    text: `<strong>Day ${GameState.currentRound} Vote:</strong> Judge chose No Elimination. ${player.name} remains ALIVE.`,
                     timestamp: new Date().toLocaleTimeString()
                 });
-                if (WinChecker.triggerEndGameIfNeeded()) return;
-                this.advanceToNextNight();
+                
+                // Switch modal view to show CONTINUE TO NIGHT
+                document.getElementById('single-vote-options-container').classList.add('hidden');
+                document.getElementById('single-vote-continue-container').classList.remove('hidden');
             },
 
             openWheelModal: function() {
@@ -1777,6 +1801,7 @@ tailwind.config = {
                 
                 document.getElementById('wheel-initial-action-container').classList.remove('hidden');
                 document.getElementById('wheel-post-spin-options').classList.add('hidden');
+                document.getElementById('wheel-continue-container').classList.add('hidden');
 
                 const count = GameState.tiedPlayersForWheel.length;
                 GameState.tiedPlayersForWheel.forEach((p, idx) => {
@@ -1802,6 +1827,7 @@ tailwind.config = {
                     document.getElementById('wheel-result-display').innerText = `SPIN RESULT: ${GameState.wheelSelectedPlayer.name.toUpperCase()}`;
                     document.getElementById('btn-eliminate-selected-name').innerText = GameState.wheelSelectedPlayer.name.toUpperCase();
                     document.getElementById('wheel-post-spin-options').classList.remove('hidden');
+                    document.getElementById('wheel-continue-container').classList.add('hidden');
                 }, 3100);
             },
 
@@ -1826,14 +1852,23 @@ tailwind.config = {
             },
 
             confirmNoElimination: function() {
-                document.getElementById('wheel-modal-backdrop').classList.add('hidden');
+                const eliminated = GameState.wheelSelectedPlayer;
                 GameState.eventLog.unshift({
                     round: GameState.currentRound, phase: 'NO ELIMINATION',
-                    text: `<strong>Day ${GameState.currentRound} Tie-Breaker:</strong> Judge chose No Elimination after wheel spin.`,
+                    text: `<strong>Day ${GameState.currentRound} Tie-Breaker:</strong> Judge chose No Elimination after wheel spin. ${eliminated ? eliminated.name : 'Selected player'} remains ALIVE.`,
                     timestamp: new Date().toLocaleTimeString()
                 });
+
+                // Switch modal view to show CONTINUE TO NIGHT
+                document.getElementById('wheel-post-spin-options').classList.add('hidden');
+                document.getElementById('wheel-continue-container').classList.remove('hidden');
+            },
+
+            executeContinueToNightFromModal: function(modalBackdropId) {
+                document.getElementById(modalBackdropId).classList.add('hidden');
                 if (WinChecker.triggerEndGameIfNeeded()) return;
                 this.advanceToNextNight();
+                AppController.updateDashboard();
             },
 
             advanceToNextNight: function() {
