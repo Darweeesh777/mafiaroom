@@ -363,23 +363,31 @@ tailwind.config = {
                 <i class="fa-solid fa-dharmachakra"></i>
             </div>
             <h3 class="text-xl font-bold text-text-primary mb-1">Vote Tie-Breaker Wheel</h3>
-            <p class="text-sm text-text-secondary mb-6 text-center">Multiple players received the highest vote count. Spin the wheel to eliminate one randomly.</p>
+            <p class="text-sm text-text-secondary mb-6 text-center">Multiple players received the highest vote count. Spin the wheel to select one randomly.</p>
             
-            <div class="relative w-64 h-64 my-4 flex items-center justify-center bg-background border-4 border-border rounded-full overflow-hidden shadow-inner">
+            <div class="relative w-56 h-56 my-2 flex items-center justify-center bg-background border-4 border-border rounded-full overflow-hidden shadow-inner">
                 <div id="wheel-pointer" class="absolute top-0 z-20 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[20px] border-t-primary drop-shadow"></div>
                 <div id="wheel-disk" class="w-full h-full flex items-center justify-center relative transition-transform duration-3000">
                     <!-- Slices rendered dynamically -->
                 </div>
             </div>
 
-            <div id="wheel-result-display" class="h-8 my-3 text-success font-bold font-mono text-center"></div>
+            <div id="wheel-result-display" class="h-6 my-2 text-success font-bold font-mono text-center text-sm"></div>
 
-            <div class="flex items-center gap-3 w-full mt-4">
-                <button id="btn-spin-wheel" onclick="VotingEngine.executeSpinWheel()" class="flex-1 bg-warning hover:bg-warning/90 text-secondary font-bold py-3 px-6 rounded-xl shadow-sm transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-play"></i> Spin Wheel Now
+            <!-- JUDGE POST-SPIN OPTIONS CONTAINER -->
+            <div id="wheel-post-spin-options" class="w-full mt-2 hidden flex flex-col gap-2.5">
+                <div class="text-xs font-mono text-warning text-center font-bold uppercase tracking-wider mb-1">Judge Final Confirmation Required</div>
+                <button id="btn-eliminate-selected" onclick="VotingEngine.confirmEliminateSelected()" class="w-full bg-danger hover:bg-danger/90 text-secondary font-bold py-3 px-4 rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-sm uppercase">
+                    <i class="fa-solid fa-skull"></i> Option 1: ELIMINATE SELECTED PLAYER
                 </button>
-                <button id="btn-close-wheel" onclick="VotingEngine.closeWheelModal()" class="hidden bg-card hover:bg-border text-text-primary font-bold py-3 px-6 rounded-xl transition">
-                    Continue with Elimination
+                <button id="btn-no-elimination" onclick="VotingEngine.confirmNoElimination()" class="w-full bg-card hover:bg-border text-text-primary border border-border font-bold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2 text-sm uppercase">
+                    <i class="fa-solid fa-shield-heart text-success"></i> Option 2: NO ELIMINATION
+                </button>
+            </div>
+
+            <div class="flex items-center gap-3 w-full mt-4" id="wheel-initial-action-container">
+                <button id="btn-spin-wheel" onclick="VotingEngine.executeSpinWheel()" class="w-full bg-warning hover:bg-warning/90 text-secondary font-bold py-3 px-6 rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play"></i> Spin Wheel Now
                 </button>
             </div>
         </div>
@@ -574,7 +582,8 @@ tailwind.config = {
             nightSequenceStep: 0,
             eventLog: [],
             tiedPlayersForWheel: [],
-            pendingHunterPlayer: null
+            pendingHunterPlayer: null,
+            wheelSelectedPlayer: null
         };
 
         const StorageManager = {
@@ -708,7 +717,8 @@ tailwind.config = {
                     nightSequenceStep: 0,
                     eventLog: [],
                     tiedPlayersForWheel: [],
-                    pendingHunterPlayer: null
+                    pendingHunterPlayer: null,
+                    wheelSelectedPlayer: null
                 };
 
                 StorageManager.clearGameData();
@@ -1758,7 +1768,7 @@ tailwind.config = {
         };
 
         /**
-         * UPDATED VOTING ENGINE: JUDGE MANUAL INPUT & RESOLUTION
+         * VOTING ENGINE & SPIN WHEEL WITH NO ELIMINATION OPTION
          */
         const VotingEngine = {
             renderVotingInterface: function() {
@@ -1770,7 +1780,7 @@ tailwind.config = {
                                 <h4 class="font-bold text-text-primary text-sm flex items-center gap-2">
                                     <i class="fa-solid fa-gavel text-warning"></i> Judge Vote Result & Entry System
                                 </h4>
-                                <p class="text-xs text-text-secondary mt-0.5">The Judge conducts the vote manually outside the app[cite: 1]. Select players who received votes and enter their vote counts below[cite: 1].</p>
+                                <p class="text-xs text-text-secondary mt-0.5">The Judge conducts the vote manually outside the app. Select players who received votes and enter their vote counts below.</p>
                             </div>
                         </div>
 
@@ -1904,8 +1914,9 @@ tailwind.config = {
                 disk.innerHTML = '';
                 disk.classList.remove('spinning');
                 document.getElementById('wheel-result-display').innerText = '';
-                document.getElementById('btn-spin-wheel').classList.remove('hidden');
-                document.getElementById('btn-close-wheel').classList.add('hidden');
+                
+                document.getElementById('wheel-initial-action-container').classList.remove('hidden');
+                document.getElementById('wheel-post-spin-options').classList.add('hidden');
 
                 const count = GameState.tiedPlayersForWheel.length;
 
@@ -1913,17 +1924,50 @@ tailwind.config = {
                     const slice = document.createElement('div');
                     slice.className = 'absolute inset-0 flex items-center justify-center font-bold text-xs text-text-primary';
                     slice.style.transform = `rotate(${idx * (360 / count)}deg)`;
-                    slice.innerHTML = `<span style="transform: translateY(-70px);">${p.name}</span>`;
+                    slice.innerHTML = `<span style="transform: translateY(-55px);">${p.name}</span>`;
                     disk.appendChild(slice);
                 });
 
-                // Save temporary recorded votes in closure/state for wheel resolution log
                 GameState._tempRecordedVotes = recordedVotes;
                 document.getElementById('wheel-modal-backdrop').classList.remove('hidden');
             },
 
-            closeWheelModal: function() {
+            executeSpinWheel: function() {
+                const disk = document.getElementById('wheel-disk');
+                document.getElementById('wheel-initial-action-container').classList.add('hidden');
+                disk.classList.add('spinning');
+
+                setTimeout(() => {
+                    const selectedIdx = Math.floor(Math.random() * GameState.tiedPlayersForWheel.length);
+                    GameState.wheelSelectedPlayer = GameState.tiedPlayersForWheel[selectedIdx];
+
+                    document.getElementById('wheel-result-display').innerText = `SELECTED: ${GameState.wheelSelectedPlayer.name.toUpperCase()}`;
+                    document.getElementById('wheel-post-spin-options').classList.remove('hidden');
+                }, 3100);
+            },
+
+            confirmEliminateSelected: function() {
+                const eliminated = GameState.wheelSelectedPlayer;
                 document.getElementById('wheel-modal-backdrop').classList.add('hidden');
+
+                DeathResolutionEngine.resolveDeath(eliminated, 'VOTE', GameState.currentRound);
+
+                let logText = `<strong>DAY ${GameState.currentRound} — VOTING</strong><br><br>`;
+                if (GameState._tempRecordedVotes) {
+                    Object.keys(GameState._tempRecordedVotes).forEach(id => {
+                        const pl = GameState.players.find(p => p.id === id);
+                        if (pl) logText += `${pl.name} — ${GameState._tempRecordedVotes[id]} votes<br>`;
+                    });
+                }
+                logText += `<br>TIE DETECTED<br><br>SPIN WHEEL<br><br>Selected: ${eliminated.name}<br><br>${eliminated.name} — DEAD<br>Role: ${ROLE_DATABASE[eliminated.roleId].name}<br>Cause: VOTE`;
+
+                GameState.eventLog.unshift({
+                    round: GameState.currentRound,
+                    phase: 'TIE BREAKER WHEEL',
+                    text: logText,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+
                 if (GameState.pendingHunterPlayer && GameState.selectedRolesConfig['hunter'] > 0) {
                     GameState.phase = 'HUNTER_SHOT';
                 } else {
@@ -1932,36 +1976,27 @@ tailwind.config = {
                 AppController.updateDashboard();
             },
 
-            executeSpinWheel: function() {
-                const disk = document.getElementById('wheel-disk');
-                document.getElementById('btn-spin-wheel').classList.add('hidden');
-                disk.classList.add('spinning');
+            confirmNoElimination: function() {
+                const selected = GameState.wheelSelectedPlayer;
+                document.getElementById('wheel-modal-backdrop').classList.add('hidden');
 
-                setTimeout(() => {
-                    const selectedIdx = Math.floor(Math.random() * GameState.tiedPlayersForWheel.length);
-                    const eliminated = GameState.tiedPlayersForWheel[selectedIdx];
-
-                    document.getElementById('wheel-result-display').innerText = `SELECTED: ${eliminated.name.toUpperCase()}`;
-                    document.getElementById('btn-close-wheel').classList.remove('hidden');
-
-                    DeathResolutionEngine.resolveDeath(eliminated, 'VOTE', GameState.currentRound);
-
-                    let logText = `<strong>DAY ${GameState.currentRound} — VOTING</strong><br><br>`;
-                    if (GameState._tempRecordedVotes) {
-                        Object.keys(GameState._tempRecordedVotes).forEach(id => {
-                            const pl = GameState.players.find(p => p.id === id);
-                            if (pl) logText += `${pl.name} — ${GameState._tempRecordedVotes[id]} votes<br>`;
-                        });
-                    }
-                    logText += `<br>TIE DETECTED<br><br>SPIN WHEEL<br><br>Selected: ${eliminated.name}<br><br>${eliminated.name} — DEAD<br>Role: ${ROLE_DATABASE[eliminated.roleId].name}<br>Cause: VOTE`;
-
-                    GameState.eventLog.unshift({
-                        round: GameState.currentRound,
-                        phase: 'TIE BREAKER WHEEL',
-                        text: logText,
-                        timestamp: new Date().toLocaleTimeString()
+                let logText = `<strong>DAY ${GameState.currentRound} — VOTING</strong><br><br>`;
+                if (GameState._tempRecordedVotes) {
+                    Object.keys(GameState._tempRecordedVotes).forEach(id => {
+                        const pl = GameState.players.find(p => p.id === id);
+                        if (pl) logText += `${pl.name} — ${GameState._tempRecordedVotes[id]} votes<br>`;
                     });
-                }, 3100);
+                }
+                logText += `<br>VOTE TIE<br>Spin Wheel Result: ${selected ? selected.name : 'Unknown'}<br>Judge Decision: NO ELIMINATION<br>Result: Nobody was eliminated by Vote`;
+
+                GameState.eventLog.unshift({
+                    round: GameState.currentRound,
+                    phase: 'VOTE TIE / NO ELIMINATION',
+                    text: logText,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+
+                this.advanceToNextNight();
             },
 
             renderHunterShotInterface: function() {
