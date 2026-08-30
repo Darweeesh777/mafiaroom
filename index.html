@@ -356,6 +356,30 @@ tailwind.config = {
         </div>
     </div>
 
+    <!-- VOTE RESULT CONFIRMATION MODAL FOR CASE 1 (ONE PLAYER HIGHEST VOTES) -->
+    <div id="vote-result-modal-backdrop" class="fixed inset-0 bg-background/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface border border-border rounded-2xl p-6 max-w-lg w-full shadow-md flex flex-col items-center animate-fade-in text-center">
+            <div class="w-12 h-12 rounded-xl bg-warning/10 border border-warning/20 text-warning flex items-center justify-center text-xl mb-3">
+                <i class="fa-solid fa-gavel"></i>
+            </div>
+            <h3 class="text-xl font-bold text-text-primary mb-1">VOTE RESULT</h3>
+            <div id="vote-result-details-text" class="text-sm text-text-secondary mb-6 space-y-1">
+                <!-- Dynamic text indicating highest voted player -->
+            </div>
+
+            <!-- JUDGE POST-VOTE OPTIONS CONTAINER -->
+            <div class="w-full mt-2 flex flex-col gap-3">
+                <div class="text-xs font-mono text-warning text-center font-bold uppercase tracking-wider mb-1">Judge Final Confirmation Required</div>
+                <button id="btn-eliminate-single" onclick="VotingEngine.confirmSingleElimination()" class="w-full bg-danger hover:bg-danger/90 text-secondary font-bold py-3.5 px-4 rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
+                    <i class="fa-solid fa-skull"></i> ELIMINATE <span id="btn-eliminate-single-name">PLAYER</span>
+                </button>
+                <button id="btn-single-no-elimination" onclick="VotingEngine.confirmSingleNoElimination()" class="w-full bg-card hover:bg-border text-text-primary border border-border font-bold py-3.5 px-4 rounded-xl transition flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
+                    <i class="fa-solid fa-shield-heart text-success"></i> NO ELIMINATION
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- SPIN WHEEL MODAL FOR TIE BREAKING -->
     <div id="wheel-modal-backdrop" class="fixed inset-0 bg-background/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface border border-border rounded-2xl p-6 max-w-lg w-full shadow-md flex flex-col items-center animate-fade-in">
@@ -378,10 +402,10 @@ tailwind.config = {
             <div id="wheel-post-spin-options" class="w-full mt-2 hidden flex flex-col gap-2.5">
                 <div class="text-xs font-mono text-warning text-center font-bold uppercase tracking-wider mb-1">Judge Final Confirmation Required</div>
                 <button id="btn-eliminate-selected" onclick="VotingEngine.confirmEliminateSelected()" class="w-full bg-danger hover:bg-danger/90 text-secondary font-bold py-3 px-4 rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-sm uppercase">
-                    <i class="fa-solid fa-skull"></i> Option 1: ELIMINATE SELECTED PLAYER
+                    <i class="fa-solid fa-skull"></i> ELIMINATE <span id="btn-eliminate-selected-name">OMAR</span>
                 </button>
                 <button id="btn-no-elimination" onclick="VotingEngine.confirmNoElimination()" class="w-full bg-card hover:bg-border text-text-primary border border-border font-bold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2 text-sm uppercase">
-                    <i class="fa-solid fa-shield-heart text-success"></i> Option 2: NO ELIMINATION
+                    <i class="fa-solid fa-shield-heart text-success"></i> NO ELIMINATION
                 </button>
             </div>
 
@@ -583,7 +607,9 @@ tailwind.config = {
             eventLog: [],
             tiedPlayersForWheel: [],
             pendingHunterPlayer: null,
-            wheelSelectedPlayer: null
+            wheelSelectedPlayer: null,
+            singleSelectedPlayer: null,
+            _tempRecordedVotes: null
         };
 
         const StorageManager = {
@@ -718,7 +744,9 @@ tailwind.config = {
                     eventLog: [],
                     tiedPlayersForWheel: [],
                     pendingHunterPlayer: null,
-                    wheelSelectedPlayer: null
+                    wheelSelectedPlayer: null,
+                    singleSelectedPlayer: null,
+                    _tempRecordedVotes: null
                 };
 
                 StorageManager.clearGameData();
@@ -727,6 +755,8 @@ tailwind.config = {
                 UIModal.close();
                 const wheelModal = document.getElementById('wheel-modal-backdrop');
                 if (wheelModal) wheelModal.classList.add('hidden');
+                const voteModal = document.getElementById('vote-result-modal-backdrop');
+                if (voteModal) voteModal.classList.add('hidden');
 
                 const countRange = document.getElementById('player-count-range');
                 const countInput = document.getElementById('player-count-input');
@@ -1768,7 +1798,7 @@ tailwind.config = {
         };
 
         /**
-         * VOTING ENGINE & SPIN WHEEL WITH NO ELIMINATION OPTION
+         * VOTING ENGINE & SPIN WHEEL WITH NO ELIMINATION OPTION FOR BOTH CASES
          */
         const VotingEngine = {
             renderVotingInterface: function() {
@@ -1875,24 +1905,46 @@ tailwind.config = {
                     return;
                 }
 
+                GameState._tempRecordedVotes = recordedVotes;
+
                 if (topTargets.length === 1) {
-                    const eliminated = GameState.players.find(p => p.id === topTargets[0]);
-                    this.executeVoteElimination(eliminated, maxVotes, recordedVotes);
+                    GameState.singleSelectedPlayer = GameState.players.find(p => p.id === topTargets[0]);
+                    this.openVoteResultModal(recordedVotes);
                 } else {
                     GameState.tiedPlayersForWheel = topTargets.map(id => GameState.players.find(p => p.id === id));
                     this.openWheelModal(recordedVotes);
                 }
             },
 
-            executeVoteElimination: function(player, voteCount, recordedVotes) {
+            openVoteResultModal: function(recordedVotes) {
+                const player = GameState.singleSelectedPlayer;
+                const detailsContainer = document.getElementById('vote-result-details-text');
+                
+                let detailsHtml = `<strong class="text-primary text-base">${player.name} has the highest number of votes.</strong><br><br>`;
+                Object.keys(recordedVotes).forEach(id => {
+                    const pl = GameState.players.find(p => p.id === id);
+                    if (pl) detailsHtml += `${pl.name} — ${recordedVotes[id]} votes<br>`;
+                });
+
+                detailsContainer.innerHTML = detailsHtml;
+                document.getElementById('btn-eliminate-single-name').innerText = player.name.toUpperCase();
+                document.getElementById('vote-result-modal-backdrop').classList.remove('hidden');
+            },
+
+            confirmSingleElimination: function() {
+                const player = GameState.singleSelectedPlayer;
+                document.getElementById('vote-result-modal-backdrop').classList.add('hidden');
+
                 DeathResolutionEngine.resolveDeath(player, 'VOTE', GameState.currentRound);
 
                 let logText = `<strong>DAY ${GameState.currentRound} — VOTING</strong><br><br>`;
-                Object.keys(recordedVotes).forEach(id => {
-                    const pl = GameState.players.find(p => p.id === id);
-                    if (pl) logText += `${pl.name} — ${recordedVotes[id]} votes<br>`;
-                });
-                logText += `<br><strong>VOTED OUT</strong><br>${player.name}<br>Role: ${ROLE_DATABASE[player.roleId].name}<br>Cause: VOTE`;
+                if (GameState._tempRecordedVotes) {
+                    Object.keys(GameState._tempRecordedVotes).forEach(id => {
+                        const pl = GameState.players.find(p => p.id === id);
+                        if (pl) logText += `${pl.name} — ${GameState._tempRecordedVotes[id]} votes<br>`;
+                    });
+                }
+                logText += `<br>VOTE RESULT<br>${player.name} has the highest number of votes.<br>Judge Decision: ELIMINATE ${player.name.toUpperCase()}<br><br>${player.name} — DEAD<br>Role: ${ROLE_DATABASE[player.roleId].name}<br>Cause: VOTE`;
 
                 GameState.eventLog.unshift({
                     round: GameState.currentRound,
@@ -1903,10 +1955,33 @@ tailwind.config = {
 
                 if (GameState.pendingHunterPlayer && GameState.selectedRolesConfig['hunter'] > 0) {
                     GameState.phase = 'HUNTER_SHOT';
-                    AppController.updateDashboard();
                 } else {
                     this.advanceToNextNight();
                 }
+                AppController.updateDashboard();
+            },
+
+            confirmSingleNoElimination: function() {
+                const player = GameState.singleSelectedPlayer;
+                document.getElementById('vote-result-modal-backdrop').classList.add('hidden');
+
+                let logText = `<strong>DAY ${GameState.currentRound} — VOTING</strong><br><br>`;
+                if (GameState._tempRecordedVotes) {
+                    Object.keys(GameState._tempRecordedVotes).forEach(id => {
+                        const pl = GameState.players.find(p => p.id === id);
+                        if (pl) logText += `${pl.name} — ${GameState._tempRecordedVotes[id]} votes<br>`;
+                    });
+                }
+                logText += `<br>VOTE RESULT<br>${player.name} has the highest number of votes.<br>Judge Decision: NO ELIMINATION<br><br>Nobody is eliminated.<br>${player.name} remains ALIVE.<br>No death-related abilities triggered.`;
+
+                GameState.eventLog.unshift({
+                    round: GameState.currentRound,
+                    phase: 'VOTE RESULT / NO ELIMINATION',
+                    text: logText,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+
+                this.advanceToNextNight();
             },
 
             openWheelModal: function(recordedVotes) {
@@ -1928,7 +2003,6 @@ tailwind.config = {
                     disk.appendChild(slice);
                 });
 
-                GameState._tempRecordedVotes = recordedVotes;
                 document.getElementById('wheel-modal-backdrop').classList.remove('hidden');
             },
 
@@ -1941,7 +2015,8 @@ tailwind.config = {
                     const selectedIdx = Math.floor(Math.random() * GameState.tiedPlayersForWheel.length);
                     GameState.wheelSelectedPlayer = GameState.tiedPlayersForWheel[selectedIdx];
 
-                    document.getElementById('wheel-result-display').innerText = `SELECTED: ${GameState.wheelSelectedPlayer.name.toUpperCase()}`;
+                    document.getElementById('wheel-result-display').innerText = `SPIN RESULT: ${GameState.wheelSelectedPlayer.name.toUpperCase()}`;
+                    document.getElementById('btn-eliminate-selected-name').innerText = GameState.wheelSelectedPlayer.name.toUpperCase();
                     document.getElementById('wheel-post-spin-options').classList.remove('hidden');
                 }, 3100);
             },
@@ -1959,7 +2034,7 @@ tailwind.config = {
                         if (pl) logText += `${pl.name} — ${GameState._tempRecordedVotes[id]} votes<br>`;
                     });
                 }
-                logText += `<br>TIE DETECTED<br><br>SPIN WHEEL<br><br>Selected: ${eliminated.name}<br><br>${eliminated.name} — DEAD<br>Role: ${ROLE_DATABASE[eliminated.roleId].name}<br>Cause: VOTE`;
+                logText += `<br>TIE DETECTED<br>SPIN RESULT: ${eliminated.name.toUpperCase()}<br>Judge Decision: ELIMINATE ${eliminated.name.toUpperCase()}<br><br>${eliminated.name} — DEAD<br>Role: ${ROLE_DATABASE[eliminated.roleId].name}<br>Cause: VOTE`;
 
                 GameState.eventLog.unshift({
                     round: GameState.currentRound,
@@ -1987,7 +2062,7 @@ tailwind.config = {
                         if (pl) logText += `${pl.name} — ${GameState._tempRecordedVotes[id]} votes<br>`;
                     });
                 }
-                logText += `<br>VOTE TIE<br>Spin Wheel Result: ${selected ? selected.name : 'Unknown'}<br>Judge Decision: NO ELIMINATION<br>Result: Nobody was eliminated by Vote`;
+                logText += `<br>VOTE TIE<br>SPIN RESULT: ${selected ? selected.name.toUpperCase() : 'UNKNOWN'}<br>Judge Decision: NO ELIMINATION<br><br>Nobody is eliminated.<br>${selected ? selected.name : 'Selected player'} remains ALIVE.<br>No death-related abilities triggered.`;
 
                 GameState.eventLog.unshift({
                     round: GameState.currentRound,
