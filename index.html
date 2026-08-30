@@ -187,16 +187,21 @@ tailwind.config = {
         <!-- STEP 3: PLAYER NAMES INPUT -->
         <section id="step-player-names" class="view-section hidden animate-fade-in w-full max-w-3xl mx-auto py-2 flex-col">
             <div class="bg-surface border border-border rounded-2xl p-4 sm:p-6 shadow-md">
-                <div class="pb-4 border-b border-border flex items-center justify-between gap-2">
+                <div class="pb-4 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
                         <h2 class="text-lg sm:text-xl font-bold text-text-primary flex items-center gap-2">
                             <i class="fa-solid fa-users text-primary"></i> Player Names
                         </h2>
                         <p class="text-xs sm:text-sm text-text-secondary">Provide unique names for all participants.</p>
                     </div>
-                    <button onclick="AppController.fillDefaultNames()" class="text-xs bg-card hover:bg-border text-text-secondary px-3 py-2 rounded-lg border border-border transition touch-manipulation shrink-0">
-                        <i class="fa-solid fa-wand-magic-sparkles mr-1 text-warning"></i> Auto-fill
-                    </button>
+                    <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                        <button onclick="AppController.confirmClearAllNames()" class="text-xs bg-danger/10 hover:bg-danger/20 text-danger border border-danger/30 px-3 py-2 rounded-lg transition touch-manipulation shrink-0 font-bold">
+                            <i class="fa-solid fa-trash-can mr-1"></i> CLEAR ALL NAMES
+                        </button>
+                        <button onclick="AppController.fillDefaultNames()" class="text-xs bg-card hover:bg-border text-text-secondary px-3 py-2 rounded-lg border border-border transition touch-manipulation shrink-0">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-1 text-warning"></i> Auto-fill
+                        </button>
+                    </div>
                 </div>
 
                 <div id="player-names-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 my-4 max-h-[50vh] overflow-y-auto pr-1">
@@ -352,7 +357,7 @@ tailwind.config = {
             <h3 id="modal-title" class="text-base sm:text-lg font-bold text-text-primary mb-1.5">Confirm Action</h3>
             <p id="modal-message" class="text-xs sm:text-sm text-text-secondary mb-5">Are you sure you want to execute this action?</p>
             <div class="flex items-center justify-end gap-3">
-                <button onclick="UIModal.close()" class="bg-card hover:bg-border text-text-secondary font-semibold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition touch-manipulation">Cancel</button>
+                <button onclick="UIModal.close()" class="bg-card hover:bg-border text-text-secondary font-semibold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition touch-manipulation">CANCEL</button>
                 <button id="modal-confirm-btn" class="bg-primary hover:bg-primary-hover text-secondary font-bold px-5 py-2.5 rounded-xl text-xs sm:text-sm transition shadow-sm touch-manipulation">Confirm</button>
             </div>
         </div>
@@ -960,7 +965,7 @@ tailwind.config = {
                 if (!GameState.players || GameState.players.length !== GameState.playerCount) {
                     GameState.players = [];
                     for (let i = 0; i < GameState.playerCount; i++) {
-                        const name = i < defaultNames.length ? defaultNames[i] : "PLAYER NAME";
+                        const name = i < defaultNames.length ? defaultNames[i] : "";
                         GameState.players.push({
                             id: 'p_' + (i + 1),
                             name: name,
@@ -985,7 +990,7 @@ tailwind.config = {
 
             updatePlayerName: function(idx, val) {
                 if (GameState.players[idx]) {
-                    GameState.players[idx].name = val.trim();
+                    GameState.players[idx].name = val;
                 }
             },
 
@@ -993,10 +998,40 @@ tailwind.config = {
                 const defaultNames = this.getDefaultNamesList();
                 for (let i = 0; i < GameState.playerCount; i++) {
                     if (GameState.players[i]) {
-                        GameState.players[i].name = i < defaultNames.length ? defaultNames[i] : "PLAYER NAME";
+                        GameState.players[i].name = i < defaultNames.length ? defaultNames[i] : "";
                         const input = document.getElementById(`player-input-${i}`);
                         if (input) input.value = GameState.players[i].name;
                     }
+                }
+            },
+
+            confirmClearAllNames: function() {
+                UIModal.show(
+                    'Clear All Player Names',
+                    'Are you sure you want to clear all player names?',
+                    'fa-trash-can text-danger bg-danger/10 border-danger/20',
+                    () => { this.clearAllNames(); },
+                    'CLEAR ALL'
+                );
+            },
+
+            clearAllNames: function() {
+                if (!GameState.players) GameState.players = [];
+                for (let i = 0; i < GameState.playerCount; i++) {
+                    if (!GameState.players[i]) {
+                        GameState.players[i] = {
+                            id: 'p_' + (i + 1),
+                            name: '',
+                            roleId: null,
+                            status: 'ALIVE',
+                            deathRound: null,
+                            deathCause: null
+                        };
+                    } else {
+                        GameState.players[i].name = '';
+                    }
+                    const input = document.getElementById(`player-input-${i}`);
+                    if (input) input.value = '';
                 }
             },
 
