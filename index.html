@@ -69,7 +69,14 @@ tailwind.config = {
         ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-sm); }
         ::-webkit-scrollbar-thumb:hover { background: var(--color-text-secondary); }
         input[type="range"] { accent-color: var(--color-primary); }
-        .app-logo { height: 48px; width: auto; object-fit: contain; display: block; }
+        
+        /* Brand Logo Rules */
+        .app-logo { height: 40px; width: auto; object-fit: contain; display: block; }
+        .sidebar-logo { height: 36px; width: auto; object-fit: contain; }
+        .setup-logo { height: 72px; width: auto; object-fit: contain; }
+        .voting-logo { height: 28px; width: auto; object-fit: contain; }
+        .endgame-logo { height: 80px; width: auto; object-fit: contain; }
+        
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
@@ -84,11 +91,11 @@ tailwind.config = {
 </head>
 <body class="bg-background text-text-primary min-h-screen flex flex-col font-sans selection:bg-primary selection:text-secondary">
 
-    <!-- HEADER -->
+    <!-- HEADER (Requirement 4 & 7) -->
     <header class="bg-surface border-b border-border sticky top-0 z-50 shadow-md">
         <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <div class="flex items-center space-x-3">
-                <img src="WhatsApp Image 2026-08-11 at 2.25.38 PM.png" alt="MAFIA Room Logo" class="app-logo rounded-lg shadow-sm">
+                <img src="WhatsApp Image 2026-08-11 at 2.25.38 PM.png" alt="MAFIA Room Logo" class="app-logo rounded-md shadow-sm">
                 <div>
                     <h1 class="text-lg font-bold tracking-wide text-text-primary flex items-center gap-2">
                         MAFIA Room <span class="text-xs bg-primary/10 text-primary border border-primary/30 px-2 py-0.5 rounded-full font-mono">v2.0 Advanced Control</span>
@@ -111,235 +118,254 @@ tailwind.config = {
         </div>
     </header>
 
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col">
-        
-        <!-- STEP 1: CREATE GAME & PLAYER COUNT -->
-        <section id="step-create-game" class="view-section flex-1 flex flex-col items-center justify-center animate-fade-in max-w-xl mx-auto w-full py-10">
-            <div class="bg-surface border border-border rounded-2xl p-8 shadow-md w-full">
-                <div class="text-center mb-6">
-                    <div class="inline-flex p-3 bg-primary/10 border border-primary/20 rounded-full text-primary mb-3">
-                        <i class="fa-solid fa-chess-board text-2xl"></i>
-                    </div>
-                    <h2 class="text-2xl font-bold text-text-primary">Create New MAFIA Room Game</h2>
-                    <p class="text-text-secondary text-sm mt-1">Configure player count (4 to 20) to proceed with role distribution.</p>
+    <div class="flex flex-1 max-w-7xl w-full mx-auto">
+        <!-- SIDEBAR (Requirement 2 & 7) -->
+        <aside class="hidden md:flex flex-col w-64 bg-surface border-r border-border p-4 gap-6 shrink-0">
+            <div class="flex items-center gap-3 px-2 pt-2 pb-4 border-b border-border">
+                <img src="WhatsApp Image 2026-08-11 at 2.25.38 PM.png" alt="Sidebar Logo" class="sidebar-logo rounded-md shadow-sm">
+                <span class="font-bold text-sm tracking-wide text-text-primary">MAFIA ROOM</span>
+            </div>
+            <div class="flex flex-col gap-1 text-xs font-medium text-text-secondary">
+                <div class="px-3 py-2 rounded-lg bg-primary/10 text-primary font-bold flex items-center gap-2 border border-primary/20">
+                    <i class="fa-solid fa-gamepad"></i> Game Master Panel
                 </div>
+            </div>
+            <div class="mt-auto p-3 bg-card rounded-xl border border-border text-xs text-text-secondary">
+                <div class="font-mono text-[10px] text-text-secondary/70 uppercase">Branded Engine</div>
+                <div class="font-bold text-text-primary mt-0.5">Secure Session Active</div>
+            </div>
+        </aside>
 
-                <div class="space-y-5">
-                    <div>
-                        <label class="block text-sm font-semibold text-text-secondary mb-2">Number of Players:</label>
-                        <div class="flex items-center gap-3">
-                            <input type="range" id="player-count-range" min="4" max="20" value="13" class="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer accent-primary" oninput="document.getElementById('player-count-input').value = this.value">
-                            <input type="number" id="player-count-input" min="4" max="20" value="13" class="w-20 bg-background border border-border rounded-lg px-3 py-2 text-center text-lg font-bold text-text-primary focus:outline-none focus:border-primary" oninput="document.getElementById('player-count-range').value = this.value">
+        <main class="flex-1 p-4 md:p-6 flex flex-col">
+            
+            <!-- STEP 1: CREATE GAME & PLAYER COUNT (Requirement 3 & 7) -->
+            <section id="step-create-game" class="view-section flex-1 flex flex-col items-center justify-center animate-fade-in max-w-xl mx-auto w-full py-10">
+                <div class="bg-surface border border-border rounded-2xl p-8 shadow-md w-full flex flex-col items-center">
+                    <div class="mb-5">
+                        <img src="WhatsApp Image 2026-08-11 at 2.25.38 PM.png" alt="Setup Screen Logo" class="setup-logo rounded-xl shadow-md border border-border">
+                    </div>
+                    <div class="text-center mb-6">
+                        <h2 class="text-2xl font-bold text-text-primary">Create New MAFIA Room Game</h2>
+                        <p class="text-text-secondary text-sm mt-1">Configure player count (4 to 20) to proceed with role distribution.</p>
+                    </div>
+
+                    <div class="space-y-5 w-full">
+                        <div>
+                            <label class="block text-sm font-semibold text-text-secondary mb-2">Number of Players:</label>
+                            <div class="flex items-center gap-3">
+                                <input type="range" id="player-count-range" min="4" max="20" value="13" class="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer accent-primary" oninput="document.getElementById('player-count-input').value = this.value">
+                                <input type="number" id="player-count-input" min="4" max="20" value="13" class="w-20 bg-background border border-border rounded-lg px-3 py-2 text-center text-lg font-bold text-text-primary focus:outline-none focus:border-primary" oninput="document.getElementById('player-count-range').value = this.value">
+                            </div>
+                            <p class="text-xs text-text-secondary/70 mt-1">Supports up to all 13 standard roles.</p>
                         </div>
-                        <p class="text-xs text-text-secondary/70 mt-1">Supports up to all 13 standard roles.</p>
-                    </div>
 
-                    <button onclick="AppController.proceedToRoleSelection()" class="w-full bg-primary hover:bg-primary-hover text-secondary font-bold py-3.5 px-4 rounded-xl shadow-sm transition flex items-center justify-center gap-2">
-                        <span>Continue to Role Selection</span>
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- STEP 2: ROLE SELECTION -->
-        <section id="step-role-selection" class="view-section hidden animate-fade-in w-full max-w-4xl mx-auto py-6 flex-col">
-            <div class="bg-surface border border-border rounded-2xl p-6 shadow-md flex flex-col flex-1">
-                <div class="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-border gap-4">
-                    <div>
-                        <h2 class="text-xl font-bold text-text-primary flex items-center gap-2">
-                            <i class="fa-solid fa-masks-theater text-primary"></i> Role Configuration & Allocation
-                        </h2>
-                        <p class="text-sm text-text-secondary">Select role quantities to match total player count. Exactly 1 role per player.</p>
-                    </div>
-                    <div id="role-counter-badge" class="flex items-center gap-3 bg-background px-4 py-2 rounded-xl border border-border">
-                        <span class="text-sm text-text-secondary font-medium">Slots Assigned:</span>
-                        <span id="role-count-display" class="text-lg font-bold font-mono text-warning">0 / 13</span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 my-6" id="roles-grid">
-                    <!-- Dynamic Role Cards populated by JS -->
-                </div>
-
-                <div id="role-validation-msg" class="hidden mb-4 p-3 bg-danger/10 border border-danger/40 rounded-lg text-danger/80 text-sm flex items-center gap-2">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    <span id="role-validation-text">Total assigned roles must match player count!</span>
-                </div>
-
-                <div class="flex items-center justify-between pt-4 border-t border-border mt-auto">
-                    <button onclick="AppController.goToStep('step-create-game')" class="bg-card hover:bg-border text-text-secondary font-semibold py-2.5 px-5 rounded-xl transition flex items-center gap-2">
-                        <i class="fa-solid fa-arrow-left"></i> Back
-                    </button>
-                    <button id="btn-proceed-names" onclick="AppController.proceedToPlayerNames()" class="bg-primary hover:bg-primary-hover text-secondary font-bold py-2.5 px-6 rounded-xl shadow-sm transition flex items-center gap-2 opacity-50 cursor-not-allowed" disabled>
-                        <span>Enter Player Names</span>
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- STEP 3: PLAYER NAMES INPUT -->
-        <section id="step-player-names" class="view-section hidden animate-fade-in w-full max-w-3xl mx-auto py-6 flex-col">
-            <div class="bg-surface border border-border rounded-2xl p-6 shadow-md">
-                <div class="pb-6 border-b border-border flex items-center justify-between">
-                    <div>
-                        <h2 class="text-xl font-bold text-text-primary flex items-center gap-2">
-                            <i class="fa-solid fa-users text-primary"></i> Enter Player Names
-                        </h2>
-                        <p class="text-sm text-text-secondary">Provide unique names for all participating players.</p>
-                    </div>
-                    <button onclick="AppController.fillDefaultNames()" class="text-xs bg-card hover:bg-border text-text-secondary px-3 py-1.5 rounded-lg border border-border transition">
-                        <i class="fa-solid fa-wand-magic-sparkles mr-1 text-warning"></i> Auto-fill Names
-                    </button>
-                </div>
-
-                <div id="player-names-container" class="grid grid-cols-1 md:grid-cols-2 gap-3 my-6 max-h-[50vh] overflow-y-auto pr-2">
-                    <!-- Dynamic Player Name Inputs -->
-                </div>
-
-                <div class="flex items-center justify-between pt-4 border-t border-border">
-                    <button onclick="AppController.goToStep('step-role-selection')" class="bg-card hover:bg-border text-text-secondary font-semibold py-2.5 px-5 rounded-xl transition flex items-center gap-2">
-                        <i class="fa-solid fa-arrow-left"></i> Back
-                    </button>
-                    <button onclick="AppController.randomizeAndReviewRoles()" class="bg-primary hover:bg-primary-hover text-secondary font-bold py-2.5 px-6 rounded-xl shadow-sm transition flex items-center gap-2">
-                        <span>Randomize Roles</span>
-                        <i class="fa-solid fa-shuffle"></i>
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- STEP 4: JUDGE ROLE REVIEW -->
-        <section id="step-role-review" class="view-section hidden animate-fade-in w-full max-w-4xl mx-auto py-6 flex-col">
-            <div class="bg-surface border border-border rounded-2xl p-6 shadow-md flex flex-col flex-1">
-                <div class="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-border gap-4">
-                    <div>
-                        <div class="flex items-center gap-2 text-warning text-xs font-mono uppercase font-bold tracking-wider mb-1">
-                            <i class="fa-solid fa-lock"></i> Judge-Only Confidential View
-                        </div>
-                        <h2 class="text-xl font-bold text-text-primary">Role Assignment Overview</h2>
-                        <p class="text-sm text-text-secondary">Review assigned roles. 1 player = 1 unique role.</p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <button onclick="AppController.randomizeRolesOnly()" class="bg-card hover:bg-border text-warning border border-warning/30 font-semibold py-2.5 px-4 rounded-xl transition flex items-center gap-2 text-sm">
-                            <i class="fa-solid fa-shuffle"></i> Randomize Again
+                        <button onclick="AppController.proceedToRoleSelection()" class="w-full bg-primary hover:bg-primary-hover text-secondary font-bold py-3.5 px-4 rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+                            <span>Continue to Role Selection</span>
+                            <i class="fa-solid fa-arrow-right"></i>
                         </button>
                     </div>
                 </div>
+            </section>
 
-                <div class="my-6 overflow-x-auto rounded-xl border border-border bg-background">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-surface/90 text-text-secondary text-xs uppercase font-mono border-b border-border">
-                                <th class="p-3.5 pl-4">#</th>
-                                <th class="p-3.5">Player Name</th>
-                                <th class="p-3.5">Assigned Role</th>
-                                <th class="p-3.5">Team</th>
-                                <th class="p-3.5 pr-4">Initial Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="assignment-table-body" class="divide-y divide-border/60 text-sm">
-                            <!-- Populated dynamically -->
-                        </tbody>
-                    </table>
+            <!-- STEP 2: ROLE SELECTION -->
+            <section id="step-role-selection" class="view-section hidden animate-fade-in w-full max-w-4xl mx-auto py-6 flex-col">
+                <div class="bg-surface border border-border rounded-2xl p-6 shadow-md flex flex-col flex-1">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-border gap-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-text-primary flex items-center gap-2">
+                                <i class="fa-solid fa-masks-theater text-primary"></i> Role Configuration & Allocation
+                            </h2>
+                            <p class="text-sm text-text-secondary">Select role quantities to match total player count. Exactly 1 role per player.</p>
+                        </div>
+                        <div id="role-counter-badge" class="flex items-center gap-3 bg-background px-4 py-2 rounded-xl border border-border">
+                            <span class="text-sm text-text-secondary font-medium">Slots Assigned:</span>
+                            <span id="role-count-display" class="text-lg font-bold font-mono text-warning">0 / 13</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 my-6" id="roles-grid">
+                        <!-- Dynamic Role Cards populated by JS -->
+                    </div>
+
+                    <div id="role-validation-msg" class="hidden mb-4 p-3 bg-danger/10 border border-danger/40 rounded-lg text-danger/80 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span id="role-validation-text">Total assigned roles must match player count!</span>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-4 border-t border-border mt-auto">
+                        <button onclick="AppController.goToStep('step-create-game')" class="bg-card hover:bg-border text-text-secondary font-semibold py-2.5 px-5 rounded-xl transition flex items-center gap-2">
+                            <i class="fa-solid fa-arrow-left"></i> Back
+                        </button>
+                        <button id="btn-proceed-names" onclick="AppController.proceedToPlayerNames()" class="bg-primary hover:bg-primary-hover text-secondary font-bold py-2.5 px-6 rounded-xl shadow-sm transition flex items-center gap-2 opacity-50 cursor-not-allowed" disabled>
+                            <span>Enter Player Names</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
                 </div>
+            </section>
 
-                <div class="flex items-center justify-between pt-4 border-t border-border">
-                    <button onclick="AppController.goToStep('step-player-names')" class="bg-card hover:bg-border text-text-secondary font-semibold py-2.5 px-5 rounded-xl transition flex items-center gap-2">
-                        <i class="fa-solid fa-arrow-left"></i> Edit Names
-                    </button>
-                    <button onclick="AppController.confirmRolesAndStartGame()" class="bg-success hover:bg-success/90 text-secondary font-bold py-3 px-6 rounded-xl shadow-sm transition flex items-center gap-2">
-                        <i class="fa-solid fa-shield-halved"></i>
-                        <span>Confirm Roles & Start Night 1</span>
-                    </button>
+            <!-- STEP 3: PLAYER NAMES INPUT -->
+            <section id="step-player-names" class="view-section hidden animate-fade-in w-full max-w-3xl mx-auto py-6 flex-col">
+                <div class="bg-surface border border-border rounded-2xl p-6 shadow-md">
+                    <div class="pb-6 border-b border-border flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl font-bold text-text-primary flex items-center gap-2">
+                                <i class="fa-solid fa-users text-primary"></i> Enter Player Names
+                            </h2>
+                            <p class="text-sm text-text-secondary">Provide unique names for all participating players.</p>
+                        </div>
+                        <button onclick="AppController.fillDefaultNames()" class="text-xs bg-card hover:bg-border text-text-secondary px-3 py-1.5 rounded-lg border border-border transition">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-1 text-warning"></i> Auto-fill Names
+                        </button>
+                    </div>
+
+                    <div id="player-names-container" class="grid grid-cols-1 md:grid-cols-2 gap-3 my-6 max-h-[50vh] overflow-y-auto pr-2">
+                        <!-- Dynamic Player Name Inputs -->
+                    </div>
+
+                    <div class="flex items-center justify-between pt-4 border-t border-border">
+                        <button onclick="AppController.goToStep('step-role-selection')" class="bg-card hover:bg-border text-text-secondary font-semibold py-2.5 px-5 rounded-xl transition flex items-center gap-2">
+                            <i class="fa-solid fa-arrow-left"></i> Back
+                        </button>
+                        <button onclick="AppController.randomizeAndReviewRoles()" class="bg-primary hover:bg-primary-hover text-secondary font-bold py-2.5 px-6 rounded-xl shadow-sm transition flex items-center gap-2">
+                            <span>Randomize Roles</span>
+                            <i class="fa-solid fa-shuffle"></i>
+                        </button>
+                    </div>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- STEP 5: LIVE GAME DASHBOARD & NIGHT/DAY PHASES -->
-        <section id="step-game-dashboard" class="view-section hidden animate-fade-in w-full max-w-7xl mx-auto py-4 flex-col flex-1">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
-                
-                <!-- COLUMN 1 & 2: GAMEPLAY CONTROL PANEL & PLAYER ROSTER -->
-                <div class="lg:col-span-2 flex flex-col gap-6">
+            <!-- STEP 4: JUDGE ROLE REVIEW -->
+            <section id="step-role-review" class="view-section hidden animate-fade-in w-full max-w-4xl mx-auto py-6 flex-col">
+                <div class="bg-surface border border-border rounded-2xl p-6 shadow-md flex flex-col flex-1">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-border gap-4">
+                        <div>
+                            <div class="flex items-center gap-2 text-warning text-xs font-mono uppercase font-bold tracking-wider mb-1">
+                                <i class="fa-solid fa-lock"></i> Judge-Only Confidential View
+                            </div>
+                            <h2 class="text-xl font-bold text-text-primary">Role Assignment Overview</h2>
+                            <p class="text-sm text-text-secondary">Review assigned roles. 1 player = 1 unique role.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button onclick="AppController.randomizeRolesOnly()" class="bg-card hover:bg-border text-warning border border-warning/30 font-semibold py-2.5 px-4 rounded-xl transition flex items-center gap-2 text-sm">
+                                <i class="fa-solid fa-shuffle"></i> Randomize Again
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="my-6 overflow-x-auto rounded-xl border border-border bg-background">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-surface/90 text-text-secondary text-xs uppercase font-mono border-b border-border">
+                                    <th class="p-3.5 pl-4">#</th>
+                                    <th class="p-3.5">Player Name</th>
+                                    <th class="p-3.5">Assigned Role</th>
+                                    <th class="p-3.5">Team</th>
+                                    <th class="p-3.5 pr-4">Initial Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="assignment-table-body" class="divide-y divide-border/60 text-sm">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-4 border-t border-border">
+                        <button onclick="AppController.goToStep('step-player-names')" class="bg-card hover:bg-border text-text-secondary font-semibold py-2.5 px-5 rounded-xl transition flex items-center gap-2">
+                            <i class="fa-solid fa-arrow-left"></i> Edit Names
+                        </button>
+                        <button onclick="AppController.confirmRolesAndStartGame()" class="bg-success hover:bg-success/90 text-secondary font-bold py-3 px-6 rounded-xl shadow-sm transition flex items-center gap-2">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <span>Confirm Roles & Start Night 1</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 5: LIVE GAME DASHBOARD & NIGHT/DAY PHASES -->
+            <section id="step-game-dashboard" class="view-section hidden animate-fade-in w-full max-w-7xl mx-auto py-4 flex-col flex-1">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
                     
-                    <!-- Phase Banner & Action Wizard Card -->
-                    <div class="bg-surface border border-border rounded-2xl p-5 shadow-md flex flex-col gap-4">
-                        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pb-4 border-b border-border">
-                            <div class="flex items-center gap-4">
-                                <div id="phase-icon-box" class="w-12 h-12 rounded-2xl bg-surface border border-primary/30 flex items-center justify-center text-primary text-xl shadow-inner">
-                                    <i class="fa-solid fa-moon"></i>
+                    <!-- COLUMN 1 & 2: GAMEPLAY CONTROL PANEL & PLAYER ROSTER -->
+                    <div class="lg:col-span-2 flex flex-col gap-6">
+                        
+                        <!-- Phase Banner & Action Wizard Card -->
+                        <div class="bg-surface border border-border rounded-2xl p-5 shadow-md flex flex-col gap-4">
+                            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pb-4 border-b border-border">
+                                <div class="flex items-center gap-4">
+                                    <div id="phase-icon-box" class="w-12 h-12 rounded-2xl bg-surface border border-primary/30 flex items-center justify-center text-primary text-xl shadow-inner">
+                                        <i class="fa-solid fa-moon"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs font-mono text-text-secondary uppercase tracking-wider">Current Phase</div>
+                                        <h3 id="dashboard-phase-title" class="text-xl font-bold text-text-primary flex items-center gap-2">
+                                            NIGHT 1 <span class="text-xs bg-primary/15 text-primary/80 border border-primary/30 px-2 py-0.5 rounded-full font-sans font-semibold">Night Sequence Active</span>
+                                        </h3>
+                                    </div>
                                 </div>
-                                <div>
-                                    <div class="text-xs font-mono text-text-secondary uppercase tracking-wider">Current Phase</div>
-                                    <h3 id="dashboard-phase-title" class="text-xl font-bold text-text-primary flex items-center gap-2">
-                                        NIGHT 1 <span class="text-xs bg-primary/15 text-primary/80 border border-primary/30 px-2 py-0.5 rounded-full font-sans font-semibold">Night Sequence Active</span>
-                                    </h3>
+                                <div id="phase-header-action-btn">
+                                    <!-- Rendered dynamically -->
                                 </div>
                             </div>
-                            <div id="phase-header-action-btn">
-                                <!-- Rendered dynamically -->
+
+                            <!-- Active Wizard / Phase Action Panel -->
+                            <div id="phase-wizard-container" class="bg-background border border-border/80 rounded-xl p-4">
+                                <!-- Dynamic wizard steps for night or day voting -->
                             </div>
                         </div>
 
-                        <!-- Active Wizard / Phase Action Panel -->
-                        <div id="phase-wizard-container" class="bg-background border border-border/80 rounded-xl p-4">
-                            <!-- Dynamic wizard steps for night or day voting -->
+                        <!-- Players Grid / Roster with Special State Badges -->
+                        <div class="bg-surface border border-border rounded-2xl p-6 shadow-md flex flex-col flex-1">
+                            <div class="flex items-center justify-between mb-4 pb-3 border-b border-border">
+                                <h3 class="font-bold text-text-primary flex items-center gap-2">
+                                    <i class="fa-solid fa-id-card-clip text-primary"></i> Player Roster & Special States
+                                </h3>
+                                <div class="flex items-center gap-2 text-xs font-mono text-text-secondary">
+                                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-success"></span> Alive: <span id="stat-alive-count" class="text-text-primary font-bold">0</span>
+                                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-danger ml-2"></span> Dead: <span id="stat-dead-count" class="text-text-primary font-bold">0</span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="dashboard-players-grid">
+                                <!-- Populated dynamically -->
+                            </div>
                         </div>
+
                     </div>
 
-                    <!-- Players Grid / Roster with Special State Badges -->
-                    <div class="bg-surface border border-border rounded-2xl p-6 shadow-md flex flex-col flex-1">
-                        <div class="flex items-center justify-between mb-4 pb-3 border-b border-border">
-                            <h3 class="font-bold text-text-primary flex items-center gap-2">
-                                <i class="fa-solid fa-id-card-clip text-primary"></i> Player Roster & Special States
+                    <!-- COLUMN 3: EVENT LOG & ABILITY TRACKER -->
+                    <div class="flex flex-col gap-6">
+                        
+                        <!-- Special Ability State Card -->
+                        <div class="bg-surface border border-border rounded-2xl p-5 shadow-md">
+                            <h3 class="font-bold text-text-primary text-sm mb-3 flex items-center gap-2 pb-2 border-b border-border">
+                                <i class="fa-solid fa-star text-warning"></i> One-Time Ability Status
                             </h3>
-                            <div class="flex items-center gap-2 text-xs font-mono text-text-secondary">
-                                <span class="inline-block w-2.5 h-2.5 rounded-full bg-success"></span> Alive: <span id="stat-alive-count" class="text-text-primary font-bold">0</span>
-                                <span class="inline-block w-2.5 h-2.5 rounded-full bg-danger ml-2"></span> Dead: <span id="stat-dead-count" class="text-text-primary font-bold">0</span>
+                            <div class="space-y-2 text-xs font-mono" id="special-abilities-status-list">
+                                <!-- Populated dynamically based on selected roles -->
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="dashboard-players-grid">
-                            <!-- Populated dynamically -->
+                        <!-- Permanent Event Log -->
+                        <div class="bg-surface border border-border rounded-2xl p-5 shadow-md flex flex-col h-[500px]">
+                            <div class="flex items-center justify-between pb-3 border-b border-border mb-3">
+                                <h3 class="font-bold text-text-primary flex items-center gap-2">
+                                    <i class="fa-solid fa-scroll text-warning"></i> Permanent Game Log
+                                </h3>
+                                <span class="text-xs bg-card text-text-secondary px-2.5 py-1 rounded-lg font-mono">Immutable</span>
+                            </div>
+
+                            <div id="game-event-log" class="flex-1 overflow-y-auto space-y-3 pr-1 text-sm bg-background p-3.5 rounded-xl border border-border/80 font-mono">
+                                <!-- Log entries populated here -->
+                            </div>
                         </div>
                     </div>
 
                 </div>
+            </section>
 
-                <!-- COLUMN 3: EVENT LOG & ABILITY TRACKER -->
-                <div class="flex flex-col gap-6">
-                    
-                    <!-- Special Ability State Card -->
-                    <div class="bg-surface border border-border rounded-2xl p-5 shadow-md">
-                        <h3 class="font-bold text-text-primary text-sm mb-3 flex items-center gap-2 pb-2 border-b border-border">
-                            <i class="fa-solid fa-star text-warning"></i> One-Time Ability Status
-                        </h3>
-                        <div class="space-y-2 text-xs font-mono" id="special-abilities-status-list">
-                            <!-- Populated dynamically based on selected roles -->
-                        </div>
-                    </div>
-
-                    <!-- Permanent Event Log -->
-                    <div class="bg-surface border border-border rounded-2xl p-5 shadow-md flex flex-col h-[500px]">
-                        <div class="flex items-center justify-between pb-3 border-b border-border mb-3">
-                            <h3 class="font-bold text-text-primary flex items-center gap-2">
-                                <i class="fa-solid fa-scroll text-warning"></i> Permanent Game Log
-                            </h3>
-                            <span class="text-xs bg-card text-text-secondary px-2.5 py-1 rounded-lg font-mono">Immutable</span>
-                        </div>
-
-                        <div id="game-event-log" class="flex-1 overflow-y-auto space-y-3 pr-1 text-sm bg-background p-3.5 rounded-xl border border-border/80 font-mono">
-                            <!-- Log entries populated here -->
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </section>
-
-    </main>
+        </main>
+    </div>
 
     <!-- MODAL POPUP -->
     <div id="modal-backdrop" class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -356,11 +382,12 @@ tailwind.config = {
         </div>
     </div>
 
-    <!-- VOTE RESULT CONFIRMATION MODAL FOR CASE 1 (ONE PLAYER HIGHEST VOTES) -->
+    <!-- VOTE RESULT CONFIRMATION MODAL FOR CASE 1 (Requirement 5 & 7) -->
     <div id="vote-result-modal-backdrop" class="fixed inset-0 bg-background/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface border border-border rounded-2xl p-6 max-w-lg w-full shadow-md flex flex-col items-center animate-fade-in text-center">
-            <div class="w-12 h-12 rounded-xl bg-warning/10 border border-warning/20 text-warning flex items-center justify-center text-xl mb-3">
-                <i class="fa-solid fa-gavel"></i>
+            <!-- Header section featuring logo (Requirement 5) -->
+            <div class="flex items-center justify-center mb-3">
+                <img src="WhatsApp Image 2026-08-11 at 2.25.38 PM.png" alt="Voting Header Logo" class="voting-logo rounded-md shadow-sm opacity-90">
             </div>
             <h3 class="text-xl font-bold text-text-primary mb-1">VOTE RESULT</h3>
             <div id="vote-result-details-text" class="text-sm text-text-secondary mb-6 space-y-1">
@@ -380,19 +407,29 @@ tailwind.config = {
         </div>
     </div>
 
-    <!-- SPIN WHEEL MODAL FOR TIE BREAKING -->
+    <!-- SPIN WHEEL MODAL FOR TIE BREAKING (Requirement 1 & 7) -->
     <div id="wheel-modal-backdrop" class="fixed inset-0 bg-background/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
         <div class="bg-surface border border-border rounded-2xl p-6 max-w-lg w-full shadow-md flex flex-col items-center animate-fade-in">
-            <div class="w-12 h-12 rounded-xl bg-warning/10 border border-warning/20 text-warning flex items-center justify-center text-xl mb-3">
-                <i class="fa-solid fa-dharmachakra"></i>
+            <!-- Header section featuring logo (Requirement 5) -->
+            <div class="flex items-center justify-center mb-2">
+                <img src="WhatsApp Image 2026-08-11 at 2.25.38 PM.png" alt="Wheel Header Logo" class="voting-logo rounded-md shadow-sm opacity-90">
             </div>
             <h3 class="text-xl font-bold text-text-primary mb-1">Vote Tie-Breaker Wheel</h3>
             <p class="text-sm text-text-secondary mb-6 text-center">Multiple players received the highest vote count. Spin the wheel to select one randomly.</p>
             
-            <div class="relative w-56 h-56 my-2 flex items-center justify-center bg-background border-4 border-border rounded-full overflow-hidden shadow-inner">
-                <div id="wheel-pointer" class="absolute top-0 z-20 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[20px] border-t-primary drop-shadow"></div>
-                <div id="wheel-disk" class="w-full h-full flex items-center justify-center relative transition-transform duration-3000">
+            <!-- Spin Wheel Container with Fixed Center Logo (Requirement 1) -->
+            <div class="relative w-64 h-64 my-2 flex items-center justify-center bg-background border-4 border-border rounded-full overflow-hidden shadow-inner">
+                <!-- Pointer -->
+                <div id="wheel-pointer" class="absolute top-0 z-30 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[20px] border-t-primary drop-shadow"></div>
+                
+                <!-- Rotating Slices Disk -->
+                <div id="wheel-disk" class="absolute inset-0 w-full h-full flex items-center justify-center relative transition-transform duration-3000">
                     <!-- Slices rendered dynamically -->
+                </div>
+
+                <!-- Fixed Center Logo (Stays completely static while wheel rotates) -->
+                <div class="absolute z-20 w-16 h-16 rounded-full bg-surface border-2 border-primary/40 flex items-center justify-center shadow-md p-1.5 pointer-events-none">
+                    <img src="WhatsApp Image 2026-08-11 at 2.25.38 PM.png" alt="Wheel Center Logo" class="w-full h-full object-contain rounded-full">
                 </div>
             </div>
 
@@ -414,6 +451,29 @@ tailwind.config = {
                     <i class="fa-solid fa-play"></i> Spin Wheel Now
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- END GAME SCREEN / MODAL / VIEW (Requirement 6 & 7) -->
+    <div id="end-game-modal-backdrop" class="fixed inset-0 bg-background/95 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface border border-border rounded-2xl p-8 max-w-xl w-full shadow-md flex flex-col items-center animate-fade-in text-center">
+            <div class="mb-4">
+                <img src="WhatsApp Image 2026-08-11 at 2.25.38 PM.png" alt="End Game Screen Logo" class="endgame-logo rounded-2xl shadow-lg border border-primary/30 p-1 bg-background">
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-success/10 border border-success/20 text-success flex items-center justify-center text-xl mb-3">
+                <img src="WhatsApp Image 2026-08-11 at 2.25.38 PM.png" alt="" class="hidden">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <h3 id="end-game-title" class="text-2xl font-bold text-text-primary mb-1">GAME OVER - TOWN WINS</h3>
+            <p id="end-game-subtitle" class="text-sm text-text-secondary mb-6">All Mafia syndicate members have been successfully eliminated from the city.</p>
+            
+            <div id="end-game-summary-stats" class="w-full bg-background border border-border rounded-xl p-4 mb-6 text-xs font-mono text-left space-y-2">
+                <!-- Populated dynamically -->
+            </div>
+
+            <button onclick="AppController.confirmNewGame()" class="w-full bg-primary hover:bg-primary-hover text-secondary font-bold py-3.5 px-6 rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
+                <i class="fa-solid fa-rotate-left"></i> Start New Game Session
+            </button>
         </div>
     </div>
 
@@ -658,9 +718,62 @@ tailwind.config = {
             }
         };
 
+        const WinChecker = {
+            checkWinCondition: function() {
+                if (!GameState.players || GameState.players.length === 0) return null;
+
+                const alivePlayers = GameState.players.filter(p => p.status === 'ALIVE');
+                const aliveMafia = alivePlayers.filter(p => {
+                    const r = ROLE_DATABASE[p.roleId];
+                    return r && r.team === 'MAFIA';
+                });
+                const aliveTown = alivePlayers.filter(p => {
+                    const r = ROLE_DATABASE[p.roleId];
+                    return r && (r.team === 'TOWN' || r.team === 'NEUTRAL');
+                });
+
+                if (aliveMafia.length === 0) {
+                    return { winner: 'TOWN', text: 'All Mafia syndicate members have been eliminated. Town wins the game!' };
+                }
+                if (aliveMafia.length >= aliveTown.length) {
+                    return { winner: 'MAFIA', text: 'Mafia members equal or outnumber the Town. Mafia dominates the city and wins!' };
+                }
+                return null;
+            },
+
+            triggerEndGameIfNeeded: function() {
+                const outcome = this.checkWinCondition();
+                if (outcome) {
+                    GameState.status = 'ENDED';
+                    StorageManager.save();
+                    
+                    const titleEl = document.getElementById('end-game-title');
+                    const subtitleEl = document.getElementById('end-game-subtitle');
+                    const statsEl = document.getElementById('end-game-summary-stats');
+
+                    titleEl.innerText = outcome.winner === 'TOWN' ? 'GAME OVER - TOWN WINS' : 'GAME OVER - MAFIA WINS';
+                    subtitleEl.innerText = outcome.text;
+
+                    let statsHtml = `<div>Total Rounds Played: <strong class="text-text-primary">${GameState.currentRound}</strong></div>`;
+                    statsHtml += `<div>Surviving Players: <strong class="text-text-primary">${GameState.players.filter(p=>p.status==='ALIVE').length}</strong></div>`;
+                    statsHtml += `<div class="mt-2 pt-2 border-t border-border font-bold text-text-primary">Final Roster Status:</div>`;
+                    GameState.players.forEach(p => {
+                        const r = ROLE_DATABASE[p.roleId];
+                        statsHtml += `<div>• ${p.name} (${r ? r.name : 'Unknown'}) — <span class="${p.status==='ALIVE'?'text-success':'text-danger'}">${p.status}</span></div>`;
+                    });
+                    statsEl.innerHTML = statsHtml;
+
+                    document.getElementById('end-game-modal-backdrop').classList.remove('hidden');
+                    return true;
+                }
+                return false;
+            }
+        };
+
         const AppController = {
             init: function() {
                 if (StorageManager.load() && GameState.status === 'RUNNING') {
+                    if (WinChecker.triggerEndGameIfNeeded()) return;
                     this.goToStep('step-game-dashboard');
                     this.updateDashboard();
                     document.getElementById('header-status-badge').classList.remove('hidden');
@@ -757,6 +870,8 @@ tailwind.config = {
                 if (wheelModal) wheelModal.classList.add('hidden');
                 const voteModal = document.getElementById('vote-result-modal-backdrop');
                 if (voteModal) voteModal.classList.add('hidden');
+                const endModal = document.getElementById('end-game-modal-backdrop');
+                if (endModal) endModal.classList.add('hidden');
 
                 const countRange = document.getElementById('player-count-range');
                 const countInput = document.getElementById('player-count-input');
@@ -1048,6 +1163,8 @@ tailwind.config = {
             },
 
             updateDashboard: function() {
+                if (WinChecker.triggerEndGameIfNeeded()) return;
+
                 document.getElementById('hdr-phase').innerText = GameState.phase;
                 document.getElementById('hdr-round').innerText = GameState.currentRound;
 
@@ -1787,6 +1904,8 @@ tailwind.config = {
                     timestamp: new Date().toLocaleTimeString()
                 });
 
+                if (WinChecker.triggerEndGameIfNeeded()) return;
+
                 if (GameState.pendingHunterPlayer && GameState.selectedRolesConfig['hunter'] > 0) {
                     GameState.phase = 'HUNTER_SHOT';
                     AppController.updateDashboard();
@@ -1953,6 +2072,8 @@ tailwind.config = {
                     timestamp: new Date().toLocaleTimeString()
                 });
 
+                if (WinChecker.triggerEndGameIfNeeded()) return;
+
                 if (GameState.pendingHunterPlayer && GameState.selectedRolesConfig['hunter'] > 0) {
                     GameState.phase = 'HUNTER_SHOT';
                 } else {
@@ -1981,6 +2102,7 @@ tailwind.config = {
                     timestamp: new Date().toLocaleTimeString()
                 });
 
+                if (WinChecker.triggerEndGameIfNeeded()) return;
                 this.advanceToNextNight();
             },
 
@@ -1999,7 +2121,7 @@ tailwind.config = {
                     const slice = document.createElement('div');
                     slice.className = 'absolute inset-0 flex items-center justify-center font-bold text-xs text-text-primary';
                     slice.style.transform = `rotate(${idx * (360 / count)}deg)`;
-                    slice.innerHTML = `<span style="transform: translateY(-55px);">${p.name}</span>`;
+                    slice.innerHTML = `<span style="transform: translateY(-75px);">${p.name}</span>`;
                     disk.appendChild(slice);
                 });
 
@@ -2043,6 +2165,8 @@ tailwind.config = {
                     timestamp: new Date().toLocaleTimeString()
                 });
 
+                if (WinChecker.triggerEndGameIfNeeded()) return;
+
                 if (GameState.pendingHunterPlayer && GameState.selectedRolesConfig['hunter'] > 0) {
                     GameState.phase = 'HUNTER_SHOT';
                 } else {
@@ -2071,6 +2195,7 @@ tailwind.config = {
                     timestamp: new Date().toLocaleTimeString()
                 });
 
+                if (WinChecker.triggerEndGameIfNeeded()) return;
                 this.advanceToNextNight();
             },
 
@@ -2113,6 +2238,7 @@ tailwind.config = {
                     timestamp: new Date().toLocaleTimeString()
                 });
 
+                if (WinChecker.triggerEndGameIfNeeded()) return;
                 this.advanceToNextNight();
             },
 
