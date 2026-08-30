@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mafia Game Master / Judge Management System v2.0</title>
+    <title>MAFIA Room - Game Master / Judge Management System v2.0</title>
     <!-- Tailwind CSS for modern, clean, responsive UI -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for professional icons -->
@@ -88,10 +88,10 @@ tailwind.config = {
     <header class="bg-surface border-b border-border sticky top-0 z-50 shadow-md">
         <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <div class="flex items-center space-x-3">
-                <img src="WhatsApp Image 2026-08-11 at 2.25.38 PM.jpeg" alt="Mafia Judge Master Logo" class="app-logo rounded-lg shadow-sm">
+                <img src="WhatsApp Image 2026-08-11 at 2.25.38 PM.jpeg" alt="MAFIA Room Logo" class="app-logo rounded-lg shadow-sm">
                 <div>
                     <h1 class="text-lg font-bold tracking-wide text-text-primary flex items-center gap-2">
-                        MAFIA JUDGE MASTER <span class="text-xs bg-primary/10 text-primary border border-primary/30 px-2 py-0.5 rounded-full font-mono">v2.0 Advanced Control</span>
+                        MAFIA Room <span class="text-xs bg-primary/10 text-primary border border-primary/30 px-2 py-0.5 rounded-full font-mono">v2.0 Advanced Control</span>[cite: 1]
                     </h1>
                     <p class="text-xs text-text-secondary">Modular Role & Night/Day Resolution Engine</p>
                 </div>
@@ -120,7 +120,7 @@ tailwind.config = {
                     <div class="inline-flex p-3 bg-primary/10 border border-primary/20 rounded-full text-primary mb-3">
                         <i class="fa-solid fa-chess-board text-2xl"></i>
                     </div>
-                    <h2 class="text-2xl font-bold text-text-primary">Create New Mafia Game</h2>
+                    <h2 class="text-2xl font-bold text-text-primary">Create New MAFIA Room Game</h2>[cite: 1]
                     <p class="text-text-secondary text-sm mt-1">Configure player count (4 to 20) to proceed with role distribution.</p>
                 </div>
 
@@ -190,7 +190,7 @@ tailwind.config = {
                         <p class="text-sm text-text-secondary">Provide unique names for all participating players.</p>
                     </div>
                     <button onclick="AppController.fillDefaultNames()" class="text-xs bg-card hover:bg-border text-text-secondary px-3 py-1.5 rounded-lg border border-border transition">
-                        <i class="fa-solid fa-wand-magic-sparkles mr-1 text-warning"></i> Auto-fill 13 Names
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1 text-warning"></i> Auto-fill Names
                     </button>
                 </div>
 
@@ -317,7 +317,7 @@ tailwind.config = {
                             <i class="fa-solid fa-star text-warning"></i> One-Time Ability Status
                         </h3>
                         <div class="space-y-2 text-xs font-mono" id="special-abilities-status-list">
-                            <!-- Populated dynamically -->
+                            <!-- Populated dynamically based on selected roles -->
                         </div>
                     </div>
 
@@ -510,8 +510,8 @@ tailwind.config = {
             'assassin': {
                 id: 'assassin',
                 name: 'Assassin',
-                team: 'MAFIA', // or special
-                alignment: 'GOOD', // Per specification: Necro and Assassin alignment for Sir is GOOD
+                team: 'MAFIA',
+                alignment: 'GOOD',
                 description: 'Has one bullet for the entire game to kill any player.',
                 icon: 'fa-crosshairs',
                 color: 'text-warning bg-warning/10 border-warning/30'
@@ -523,9 +523,9 @@ tailwind.config = {
          */
         let GameState = {
             gameId: 'MAFIA-' + Math.floor(1000 + Math.random() * 9000),
-            status: 'SETUP', // SETUP, RUNNING, FINISHED
+            status: 'SETUP',
             currentRound: 1,
-            phase: 'NIGHT', // NIGHT, DAY, VOTING, HUNTER_SHOT
+            phase: 'NIGHT',
             playerCount: 13,
             selectedRolesConfig: {
                 'boss': 1,
@@ -543,7 +543,7 @@ tailwind.config = {
                 'necro': 1,
                 'assassin': 1
             },
-            players: [], // { id, name, roleId, status: 'ALIVE'|'DEAD', deathRound, deathCause }
+            players: [],
             specialAbilityState: {
                 necroUsed: false,
                 assassinBulletUsed: false,
@@ -557,7 +557,7 @@ tailwind.config = {
                 playerBId: null
             },
             bodyguardPermanentTargetId: null,
-            townCrierMessages: {}, // roundNumber -> text
+            townCrierMessages: {},
             nightActions: {
                 spyTargetId: null,
                 mafiaTargetId: null,
@@ -571,22 +571,21 @@ tailwind.config = {
                 mazoonPlayerAId: null,
                 mazoonPlayerBId: null
             },
-            nightSequenceStep: 0, // 0 to 7
+            nightSequenceStep: 0,
             eventLog: [],
             tiedPlayersForWheel: [],
             pendingHunterPlayer: null
         };
 
-        // Storage helper
         const StorageManager = {
             save: function() {
                 try {
-                    localStorage.setItem('mafia_game_state_v2', JSON.stringify(GameState));
+                    localStorage.setItem('mafia_room_state_v2', JSON.stringify(GameState));
                 } catch(e) {}
             },
             load: function() {
                 try {
-                    const saved = localStorage.getItem('mafia_game_state_v2');
+                    const saved = localStorage.getItem('mafia_room_state_v2');
                     if (saved) {
                         GameState = JSON.parse(saved);
                         return true;
@@ -595,19 +594,15 @@ tailwind.config = {
                 return false;
             },
             clearGameData: function() {
-                // Remove only this application's game state. Branding/app settings remain untouched.
                 try {
-                    localStorage.removeItem('mafia_game_state_v2');
+                    localStorage.removeItem('mafia_room_state_v2');
                 } catch(e) {}
                 try {
-                    sessionStorage.removeItem('mafia_game_state_v2');
+                    sessionStorage.removeItem('mafia_room_state_v2');
                 } catch(e) {}
             }
         };
 
-        /**
-         * 3. UI MODAL HELPER
-         */
         const UIModal = {
             show: function(title, message, iconClass, onConfirm, confirmLabel = 'Confirm') {
                 document.getElementById('modal-title').innerText = title;
@@ -628,9 +623,6 @@ tailwind.config = {
             }
         };
 
-        /**
-         * 4. APP CONTROLLER & VIEW MANAGER
-         */
         const AppController = {
             init: function() {
                 if (StorageManager.load() && GameState.status === 'RUNNING') {
@@ -670,12 +662,10 @@ tailwind.config = {
             },
 
             startNewGame: function() {
-                // Build a completely fresh state while preserving the application rules/configuration.
                 const freshRoleConfig = {};
                 Object.keys(ROLE_DATABASE).forEach(roleId => {
                     freshRoleConfig[roleId] = 0;
                 });
-                // Preserve the initial/default role configuration used by the existing setup screen.
                 ['boss','underboss','spy','king','princess','town_crier','bodyguard','clown','mazoon','hunter','sir','doctor','necro','assassin'].forEach(roleId => {
                     freshRoleConfig[roleId] = 1;
                 });
@@ -724,12 +714,10 @@ tailwind.config = {
                 StorageManager.clearGameData();
                 StorageManager.save();
 
-                // Close any open UI overlays.
                 UIModal.close();
                 const wheelModal = document.getElementById('wheel-modal-backdrop');
                 if (wheelModal) wheelModal.classList.add('hidden');
 
-                // Reset setup controls to the initial screen values.
                 const countRange = document.getElementById('player-count-range');
                 const countInput = document.getElementById('player-count-input');
                 if (countRange) countRange.value = '13';
@@ -810,7 +798,6 @@ tailwind.config = {
             normalizeRoleCounts: function() {
                 let sum = Object.values(GameState.selectedRolesConfig).reduce((a, b) => a + b, 0);
                 if (sum !== GameState.playerCount) {
-                    // Adjust boss and doctor to match count
                     GameState.selectedRolesConfig['boss'] = 1;
                     GameState.selectedRolesConfig['doctor'] = 1;
                     let remaining = GameState.playerCount - 2;
@@ -895,9 +882,11 @@ tailwind.config = {
             fillDefaultNames: function() {
                 const sampleNames = ['Ahmed', 'Mohamed', 'Omar', 'Ali', 'Karim', 'Youssef', 'Hassan', 'Mostafa', 'Khaled', 'Mahmoud', 'Tarek', 'Ziad', 'Amr', 'Ibrahim'];
                 for (let i = 0; i < GameState.playerCount; i++) {
-                    GameState.players[i].name = sampleNames[i] || `Player ${i + 1}`;
-                    const input = document.getElementById(`player-input-${i}`);
-                    if (input) input.value = GameState.players[i].name;
+                    if (GameState.players[i]) {
+                        GameState.players[i].name = sampleNames[i] || `Player ${i + 1}`;
+                        const input = document.getElementById(`player-input-${i}`);
+                        if (input) input.value = GameState.players[i].name;
+                    }
                 }
             },
 
@@ -935,7 +924,6 @@ tailwind.config = {
                     }
                 });
 
-                // Fisher-Yates shuffle
                 for (let i = rolePool.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [rolePool[i], rolePool[j]] = [rolePool[j], rolePool[i]];
@@ -1001,7 +989,7 @@ tailwind.config = {
                         GameState.eventLog.unshift({
                             round: 1,
                             phase: 'NIGHT',
-                            text: '🌙 Night 1 has begun. Executing Night Sequence steps.',
+                            text: '🌙 Night 1 has begun. Executing Dynamic Night Sequence steps.',
                             timestamp: new Date().toLocaleTimeString()
                         });
 
@@ -1039,7 +1027,6 @@ tailwind.config = {
                 const container = document.getElementById('dashboard-players-grid');
                 container.innerHTML = '';
 
-                // Check if Boss is dead and Underboss is active
                 const bossPlayer = GameState.players.find(p => p.roleId === 'boss');
                 const isBossDead = !bossPlayer || bossPlayer.status === 'DEAD';
 
@@ -1047,19 +1034,16 @@ tailwind.config = {
                     const role = ROLE_DATABASE[player.roleId] || { name: 'Unknown', team: 'UNKNOWN', icon: 'fa-user' };
                     const isAlive = player.status === 'ALIVE';
 
-                    // Check if Underboss is active mafia leader
                     let roleBadgeText = role.name;
                     if (player.roleId === 'underboss' && isBossDead) {
                         roleBadgeText = 'Underboss (Active Mafia Leader)';
                     }
 
-                    // Marriage status
                     let marriageTag = '';
                     if (GameState.marriage.active && (GameState.marriage.playerAId === player.id || GameState.marriage.playerBId === player.id)) {
                         marriageTag = `<span class="text-[10px] font-mono bg-primary/10 text-primary border border-primary/30 px-1.5 py-0.5 rounded"><i class="fa-solid fa-ring"></i> Married</span>`;
                     }
 
-                    // Bodyguard protected tag
                     let bgTag = '';
                     if (GameState.bodyguardPermanentTargetId === player.id) {
                         bgTag = `<span class="text-[10px] font-mono bg-success/10 text-success border border-success/30 px-1.5 py-0.5 rounded"><i class="fa-solid fa-shield"></i> Bodyguard Protected</span>`;
@@ -1099,29 +1083,50 @@ tailwind.config = {
             renderSpecialAbilitiesStatus: function() {
                 const list = document.getElementById('special-abilities-status-list');
                 const state = GameState.specialAbilityState;
+                const hasRole = (rId) => Object.values(GameState.players).some(p => p.roleId === rId);
 
-                list.innerHTML = `
-                    <div class="flex justify-between items-center bg-background p-2 rounded border border-border">
-                        <span class="text-text-secondary">Necro Revival:</span>
-                        <span class="${state.necroUsed ? 'text-danger font-bold' : 'text-success font-bold'}">${state.necroUsed ? 'USED' : 'AVAILABLE'}</span>
-                    </div>
-                    <div class="flex justify-between items-center bg-background p-2 rounded border border-border">
-                        <span class="text-text-secondary">Assassin Bullet:</span>
-                        <span class="${state.assassinBulletUsed ? 'text-danger font-bold' : 'text-success font-bold'}">${state.assassinBulletUsed ? 'USED' : 'AVAILABLE'}</span>
-                    </div>
-                    <div class="flex justify-between items-center bg-background p-2 rounded border border-border">
-                        <span class="text-text-secondary">Hunter Bullet:</span>
-                        <span class="${state.hunterBulletUsed ? 'text-danger font-bold' : 'text-success font-bold'}">${state.hunterBulletUsed ? 'USED' : 'AVAILABLE'}</span>
-                    </div>
-                    <div class="flex justify-between items-center bg-background p-2 rounded border border-border">
-                        <span class="text-text-secondary">Bodyguard Prot.:</span>
-                        <span class="${state.bodyguardProtectionUsed ? 'text-danger font-bold' : 'text-success font-bold'}">${state.bodyguardProtectionUsed ? 'LOCKED' : 'AVAILABLE'}</span>
-                    </div>
-                    <div class="flex justify-between items-center bg-background p-2 rounded border border-border">
-                        <span class="text-text-secondary">Mazoon Marriage:</span>
-                        <span class="${state.mazoonMarriageUsed ? 'text-danger font-bold' : 'text-success font-bold'}">${state.mazoonMarriageUsed ? 'COMPLETED' : 'AVAILABLE'}</span>
-                    </div>
-                `;
+                let html = '';
+                if (hasRole('necro')) {
+                    html += `
+                        <div class="flex justify-between items-center bg-background p-2 rounded border border-border">
+                            <span class="text-text-secondary">Necro Revival:</span>
+                            <span class="${state.necroUsed ? 'text-danger font-bold' : 'text-success font-bold'}">${state.necroUsed ? 'USED' : 'AVAILABLE'}</span>
+                        </div>`;
+                }
+                if (hasRole('assassin')) {
+                    html += `
+                        <div class="flex justify-between items-center bg-background p-2 rounded border border-border">
+                            <span class="text-text-secondary">Assassin Bullet:</span>
+                            <span class="${state.assassinBulletUsed ? 'text-danger font-bold' : 'text-success font-bold'}">${state.assassinBulletUsed ? 'USED' : 'AVAILABLE'}</span>
+                        </div>`;
+                }
+                if (hasRole('hunter')) {
+                    html += `
+                        <div class="flex justify-between items-center bg-background p-2 rounded border border-border">
+                            <span class="text-text-secondary">Hunter Bullet:</span>
+                            <span class="${state.hunterBulletUsed ? 'text-danger font-bold' : 'text-success font-bold'}">${state.hunterBulletUsed ? 'USED' : 'AVAILABLE'}</span>
+                        </div>`;
+                }
+                if (hasRole('bodyguard')) {
+                    html += `
+                        <div class="flex justify-between items-center bg-background p-2 rounded border border-border">
+                            <span class="text-text-secondary">Bodyguard Prot.:</span>
+                            <span class="${state.bodyguardProtectionUsed ? 'text-danger font-bold' : 'text-success font-bold'}">${state.bodyguardProtectionUsed ? 'LOCKED' : 'AVAILABLE'}</span>
+                        </div>`;
+                }
+                if (hasRole('mazoon')) {
+                    html += `
+                        <div class="flex justify-between items-center bg-background p-2 rounded border border-border">
+                            <span class="text-text-secondary">Mazoon Marriage:</span>
+                            <span class="${state.mazoonMarriageUsed ? 'text-danger font-bold' : 'text-success font-bold'}">${state.mazoonMarriageUsed ? 'COMPLETED' : 'AVAILABLE'}</span>
+                        </div>`;
+                }
+
+                if (!html) {
+                    html = `<div class="text-xs text-text-secondary italic">No active special ability roles in this game.</div>`;
+                }
+
+                list.innerHTML = html;
             },
 
             renderPhaseWizard: function() {
@@ -1145,7 +1150,7 @@ tailwind.config = {
                 } else if (GameState.phase === 'DAY') {
                     iconBox.className = 'w-12 h-12 rounded-2xl bg-warning/10 border border-warning/30 flex items-center justify-center text-warning text-xl shadow-inner';
                     iconBox.innerHTML = '<i class="fa-solid fa-sun"></i>';
-                    phaseTitle.innerHTML = `DAY ${GameState.currentRound} <span class="text-xs bg-warning/15 text-warning border border-warning/40 px-2 py-0.5 rounded-full font-sans font-semibold">Discussion & Voting Phase</span>`;
+                    phaseTitle.innerHTML = `DAY ${GameState.currentRound} <span class="text-xs bg-warning/15 text-warning border border-warning/40 px-2 py-0.5 rounded-full font-sans font-semibold">Discussion & Judge Vote Resolution</span>`;
                     
                     headerActionBtn.innerHTML = '';
                     wizardContainer.innerHTML = VotingEngine.renderVotingInterface();
@@ -1178,28 +1183,47 @@ tailwind.config = {
             }
         };
 
-        /**
-         * 5. CONFIGURABLE NIGHT SEQUENCE MANAGER (Steps 0 to 7)
-         */
         const NightSequenceManager = {
-            steps: [
-                { id: 'spy', name: 'Step 1: SPY Investigation', roleReq: 'spy' },
-                { id: 'mafia', name: 'Step 2: Mafia / Underboss Kill', roleReq: 'mafia_active' },
-                { id: 'necro', name: 'Step 3: Necro Revival', roleReq: 'necro' },
-                { id: 'assassin', name: 'Step 4: Assassin Bullet', roleReq: 'assassin' },
-                { id: 'bodyguard', name: 'Step 5: Bodyguard Protection', roleReq: 'bodyguard' },
-                { id: 'town_crier', name: 'Step 6: Town Crier Message', roleReq: 'town_crier' },
-                { id: 'mazoon', name: 'Step 7: Mazoon Marriage (Night 1 Only)', roleReq: 'mazoon' },
-                { id: 'sir_doc', name: 'Step 8: Sir Investigation & Doctor Protection', roleReq: 'sir_or_doctor' },
-                { id: 'resolve', name: 'Step 9: Resolve Night', roleReq: 'all' }
-            ],
+            getActiveSteps: function() {
+                const hasRole = (rId) => GameState.selectedRolesConfig[rId] > 0;
+                const alivePlayers = GameState.players.filter(p => p.status === 'ALIVE');
+                const steps = [];
+
+                if (hasRole('spy')) {
+                    steps.push({ id: 'spy', name: 'SPY Investigation', roleReq: 'spy' });
+                }
+                if (hasRole('boss') || hasRole('underboss')) {
+                    steps.push({ id: 'mafia', name: 'Mafia / Underboss Kill', roleReq: 'mafia_active' });
+                }
+                if (hasRole('necro')) {
+                    steps.push({ id: 'necro', name: 'Necro Revival', roleReq: 'necro' });
+                }
+                if (hasRole('assassin')) {
+                    steps.push({ id: 'assassin', name: 'Assassin Bullet', roleReq: 'assassin' });
+                }
+                if (hasRole('bodyguard')) {
+                    steps.push({ id: 'bodyguard', name: 'Bodyguard Protection', roleReq: 'bodyguard' });
+                }
+                if (hasRole('town_crier')) {
+                    steps.push({ id: 'town_crier', name: 'Town Crier Message', roleReq: 'town_crier' });
+                }
+                if (hasRole('mazoon') && GameState.currentRound === 1) {
+                    steps.push({ id: 'mazoon', name: 'Mazoon Marriage (Night 1 Only)', roleReq: 'mazoon' });
+                }
+                if (hasRole('sir') || hasRole('doctor')) {
+                    steps.push({ id: 'sir_doc', name: 'Sir Investigation & Doctor Protection', roleReq: 'sir_or_doctor' });
+                }
+
+                steps.push({ id: 'resolve', name: 'Resolve Night', roleReq: 'all' });
+                return steps;
+            },
 
             renderCurrentStepHtml: function() {
-                const stepIdx = GameState.nightSequenceStep;
-                if (stepIdx >= this.steps.length) {
-                    GameState.nightSequenceStep = this.steps.length - 1;
+                const activeSteps = this.getActiveSteps();
+                if (GameState.nightSequenceStep >= activeSteps.length) {
+                    GameState.nightSequenceStep = activeSteps.length - 1;
                 }
-                const currentStep = this.steps[GameState.nightSequenceStep];
+                const currentStep = activeSteps[GameState.nightSequenceStep];
                 const alivePlayers = GameState.players.filter(p => p.status === 'ALIVE');
 
                 let stepContentHtml = '';
@@ -1230,7 +1254,6 @@ tailwind.config = {
                         break;
 
                     case 'mafia':
-                        // Boss alive or Underboss takes over
                         const bossAlive = alivePlayers.some(p => p.roleId === 'boss');
                         const underbossAlive = alivePlayers.some(p => p.roleId === 'underboss');
                         const mafiaLeaderTitle = bossAlive ? 'BOSS' : (underbossAlive ? 'UNDERBOSS (Active Mafia Leader)' : 'MAFIA ELIMINATED');
@@ -1238,8 +1261,6 @@ tailwind.config = {
                         if (!bossAlive && !underbossAlive) {
                             stepContentHtml = `<div class="text-xs text-text-secondary italic py-4">Both Boss and Underboss are eliminated. No Mafia attack possible.</div>`;
                         } else {
-                            // Mafia leader can ONLY target non-Mafia players.
-                            // Boss/Underboss/Spy cannot kill themselves or any of the other Mafia leadership/Spy roles.
                             const validMafiaTargets = alivePlayers.filter(p =>
                                 p.roleId !== 'boss' && p.roleId !== 'underboss' && p.roleId !== 'spy'
                             );
@@ -1378,12 +1399,13 @@ tailwind.config = {
                         break;
 
                     case 'sir_doc':
-                        const sirAlive = alivePlayers.some(p => p.roleId === 'sir');
-                        const docAlive = alivePlayers.some(p => p.roleId === 'doctor');
+                        const sirInGame = GameState.selectedRolesConfig['sir'] > 0;
+                        const docInGame = GameState.selectedRolesConfig['doctor'] > 0;
                         stepContentHtml = `
                             <div class="space-y-4">
-                                <div class="flex items-center gap-2 text-primary font-bold text-sm"><i class="fa-solid fa-magnifying-glass"></i> SIR (Investigator) & DOCTOR (Protector)</div>
+                                <div class="flex items-center gap-2 text-primary font-bold text-sm"><i class="fa-solid fa-magnifying-glass"></i> SIR & DOCTOR ACTIONS</div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    ${sirInGame ? `
                                     <div class="bg-surface p-3 rounded-xl border border-border">
                                         <label class="block text-xs font-bold text-primary/80 mb-1">Sir Investigation Target:</label>
                                         <select id="input-sir-target" class="bg-background border border-border text-xs text-text-primary rounded-lg px-3 py-2 w-full font-medium mb-2">
@@ -1392,7 +1414,9 @@ tailwind.config = {
                                         </select>
                                         <button onclick="NightSequenceManager.saveSirAction()" class="bg-primary hover:bg-primary-hover text-secondary font-bold text-xs px-3 py-2 rounded-lg w-full transition">Save Sir Investigation</button>
                                         ${GameState.nightActions.sirTargetId ? `<div class="mt-2 p-2 bg-surface/60 rounded text-xs text-primary/70"><strong>Sir Result:</strong> <span class="font-bold uppercase text-text-primary">${AlignmentEngine.getSirAlignment(GameState.nightActions.sirTargetId)}</span></div>` : ''}
-                                    </div>
+                                    </div>` : `<div class="text-xs text-text-secondary italic">Sir is not selected in this game.</div>`}
+                                    
+                                    ${docInGame ? `
                                     <div class="bg-surface p-3 rounded-xl border border-border">
                                         <label class="block text-xs font-bold text-success mb-1">Doctor Protection Target:</label>
                                         <select id="input-doc-target" class="bg-background border border-border text-xs text-text-primary rounded-lg px-3 py-2 w-full font-medium mb-2">
@@ -1400,7 +1424,7 @@ tailwind.config = {
                                             ${alivePlayers.map(p => `<option value="${p.id}" ${GameState.nightActions.doctorTargetId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
                                         </select>
                                         <button onclick="NightSequenceManager.saveDoctorAction()" class="bg-success hover:bg-success/90 text-secondary font-bold text-xs px-3 py-2 rounded-lg w-full transition">Save Doctor Protection</button>
-                                    </div>
+                                    </div>` : `<div class="text-xs text-text-secondary italic">Doctor is not selected in this game.</div>`}
                                 </div>
                             </div>
                         `;
@@ -1425,10 +1449,10 @@ tailwind.config = {
                 return `
                     <div class="flex flex-col gap-4">
                         <div class="flex items-center justify-between text-xs font-mono text-text-secondary pb-2 border-b border-border">
-                            <span>Step ${stepIdx + 1} of ${this.steps.length}: <strong class="text-text-primary">${currentStep.name}</strong></span>
+                            <span>Step ${GameState.nightSequenceStep + 1} of ${activeSteps.length}: <strong class="text-text-primary">${currentStep.name}</strong></span>
                             <div class="flex gap-2">
-                                ${stepIdx > 0 ? `<button onclick="NightSequenceManager.prevStep()" class="px-2.5 py-1 bg-surface hover:bg-card text-text-secondary rounded border border-border">Prev</button>` : ''}
-                                ${stepIdx < this.steps.length - 1 ? `<button onclick="NightSequenceManager.nextStep()" class="px-2.5 py-1 bg-primary/15 hover:bg-primary/25 text-primary/70 rounded border border-primary/30">Next</button>` : ''}
+                                ${GameState.nightSequenceStep > 0 ? `<button onclick="NightSequenceManager.prevStep()" class="px-2.5 py-1 bg-surface hover:bg-card text-text-secondary rounded border border-border">Prev</button>` : ''}
+                                ${GameState.nightSequenceStep < activeSteps.length - 1 ? `<button onclick="NightSequenceManager.nextStep()" class="px-2.5 py-1 bg-primary/15 hover:bg-primary/25 text-primary/70 rounded border border-primary/30">Next</button>` : ''}
                             </div>
                         </div>
                         ${stepContentHtml}
@@ -1437,7 +1461,8 @@ tailwind.config = {
             },
 
             nextStep: function() {
-                if (GameState.nightSequenceStep < this.steps.length - 1) {
+                const activeSteps = this.getActiveSteps();
+                if (GameState.nightSequenceStep < activeSteps.length - 1) {
                     GameState.nightSequenceStep++;
                     AppController.updateDashboard();
                 }
@@ -1474,7 +1499,6 @@ tailwind.config = {
                     return;
                 }
 
-                // Hard rule: Mafia can never target Boss, Underboss, or SPY.
                 if (['boss', 'underboss', 'spy'].includes(target.roleId)) {
                     alert('Boss, Underboss, and SPY cannot be targeted by the Mafia attack.');
                     return;
@@ -1550,28 +1574,22 @@ tailwind.config = {
             }
         };
 
-        /**
-         * 6. ALIGNMENT ENGINE (Sir investigation and team rules)
-         */
         const AlignmentEngine = {
             getSirAlignment: function(playerId) {
                 const player = GameState.players.find(p => p.id === playerId);
                 if (!player) return 'UNKNOWN';
                 
-                // Sir investigation rule:
-                // BAD: Boss, Underboss, SPY
-                // GOOD: Everyone else (including King, Princess, Necro, Assassin, Doctor, etc.)
                 const roleId = player.roleId;
-                if (roleId === 'boss' || roleId === 'underboss' || roleId === 'spy') {
+                if (roleId === 'boss') {
+                    return 'GOOD';
+                }
+                if (roleId === 'underboss' || roleId === 'spy') {
                     return 'BAD';
                 }
                 return 'GOOD';
             }
         };
 
-        /**
-         * 7. CENTRAL DEATH RESOLUTION & NIGHT RESOLUTION ENGINE
-         */
         const DeathResolutionEngine = {
             resolveDeath: function(targetPlayer, cause, round) {
                 if (!targetPlayer || targetPlayer.status === 'DEAD') return false;
@@ -1580,9 +1598,7 @@ tailwind.config = {
                 targetPlayer.deathRound = round;
                 targetPlayer.deathCause = cause;
 
-                // Handle Boss death transition
                 if (targetPlayer.roleId === 'boss') {
-                    // Underboss becomes active mafia leader
                     const underbossPlayer = GameState.players.find(p => p.roleId === 'underboss' && p.status === 'ALIVE');
                     if (underbossPlayer) {
                         GameState.eventLog.unshift({
@@ -1594,7 +1610,6 @@ tailwind.config = {
                     }
                 }
 
-                // Handle Marriage death chain
                 if (GameState.marriage.active) {
                     let spouseId = null;
                     if (GameState.marriage.playerAId === targetPlayer.id) spouseId = GameState.marriage.playerBId;
@@ -1613,7 +1628,6 @@ tailwind.config = {
                             spousePlayer.deathRound = round;
                             spousePlayer.deathCause = 'MARRIAGE';
                             
-                            // Check spouse role transition if boss
                             if (spousePlayer.roleId === 'boss') {
                                 const ub = GameState.players.find(p => p.roleId === 'underboss' && p.status === 'ALIVE');
                                 if (ub) {
@@ -1629,8 +1643,7 @@ tailwind.config = {
                     }
                 }
 
-                // Handle Hunter last shot trigger
-                if (targetPlayer.roleId === 'hunter' && !GameState.specialAbilityState.hunterBulletUsed) {
+                if (targetPlayer.roleId === 'hunter' && !GameState.specialAbilityState.hunterBulletUsed && GameState.selectedRolesConfig['hunter'] > 0) {
                     GameState.specialAbilityState.hunterBulletUsed = true;
                     GameState.pendingHunterPlayer = targetPlayer;
                 }
@@ -1655,8 +1668,7 @@ tailwind.config = {
                 let roundLogs = [];
                 const round = GameState.currentRound;
 
-                // 1. Necro Revival
-                if (GameState.nightActions.necroTargetId && !GameState.specialAbilityState.necroUsed) {
+                if (GameState.nightActions.necroTargetId && !GameState.specialAbilityState.necroUsed && GameState.selectedRolesConfig['necro'] > 0) {
                     const deadTarget = GameState.players.find(p => p.id === GameState.nightActions.necroTargetId);
                     if (deadTarget && deadTarget.status === 'DEAD') {
                         deadTarget.status = 'ALIVE';
@@ -1667,9 +1679,8 @@ tailwind.config = {
                     }
                 }
 
-                // 2. Assassin Shot
                 let assassinVictim = null;
-                if (GameState.nightActions.assassinUseBullet && !GameState.specialAbilityState.assassinBulletUsed && GameState.nightActions.assassinTargetId) {
+                if (GameState.nightActions.assassinUseBullet && !GameState.specialAbilityState.assassinBulletUsed && GameState.nightActions.assassinTargetId && GameState.selectedRolesConfig['assassin'] > 0) {
                     const assassinPlayer = GameState.players.find(p => p.roleId === 'assassin' && p.status === 'ALIVE');
                     if (assassinPlayer) {
                         GameState.specialAbilityState.assassinBulletUsed = true;
@@ -1682,48 +1693,42 @@ tailwind.config = {
                     }
                 }
 
-                // 3. Mafia Attack & Doctor Save & Bodyguard Sacrifice
                 let mafiaTargetId = GameState.nightActions.mafiaTargetId;
                 let doctorTargetId = GameState.nightActions.doctorTargetId;
                 
-                if (mafiaTargetId) {
+                if (mafiaTargetId && (GameState.selectedRolesConfig['boss'] > 0 || GameState.selectedRolesConfig['underboss'] > 0)) {
                     const targetPlayer = GameState.players.find(p => p.id === mafiaTargetId);
                     const doctorPlayer = GameState.players.find(p => p.roleId === 'doctor' && p.status === 'ALIVE');
                     const bodyguardPlayer = GameState.players.find(p => p.roleId === 'bodyguard' && p.status === 'ALIVE');
 
                     if (targetPlayer && targetPlayer.status === 'ALIVE') {
-                        // Rule 9: King cannot be killed by Mafia
                         if (targetPlayer.roleId === 'king') {
                             roundLogs.push(`👑 Mafia targeted The King (${targetPlayer.name}), but the King is immune to Mafia kills!`);
                         } 
-                        // Rule 25: Doctor save
-                        else if (doctorTargetId === mafiaTargetId) {
+                        else if (doctorTargetId === mafiaTargetId && GameState.selectedRolesConfig['doctor'] > 0) {
                             roundLogs.push(`🩺 Doctor successfully protected ${targetPlayer.name} from the Mafia attack.`);
                         } 
-                        // Rule 12: Bodyguard sacrifice
-                        else if (GameState.bodyguardPermanentTargetId === mafiaTargetId && bodyguardPlayer && bodyguardPlayer.status === 'ALIVE') {
+                        else if (GameState.bodyguardPermanentTargetId === mafiaTargetId && bodyguardPlayer && bodyguardPlayer.status === 'ALIVE' && GameState.selectedRolesConfig['bodyguard'] > 0) {
                             DeathResolutionEngine.resolveDeath(bodyguardPlayer, 'MAFIA', round);
                             roundLogs.push(`🛡️ Mafia targeted ${targetPlayer.name}. Bodyguard (${bodyguardPlayer.name}) sacrificed himself to protect him! Bodyguard died, ${targetPlayer.name} survived.`);
                         } 
-                        // Normal kill
                         else {
                             DeathResolutionEngine.resolveDeath(targetPlayer, 'MAFIA', round);
-                            roundLogs.push(`💀 Mafia successfully attacked and killed ${targetPlayer.name} (${ROLE_DATABASE[targetPlayer.roleId].name}).`);
+                            roundLogs.push(`💀 Mafia successfully attacked and killed ${targetPlayer.name} (${ROLE_DATABASE[target.roleId].name}).`);
                         }
                     }
                 } else {
                     roundLogs.push(`🛡️ No Mafia attack occurred tonight.`);
                 }
 
-                // SPY and Sir investigations results logging
-                if (GameState.nightActions.spyTargetId) {
+                if (GameState.nightActions.spyTargetId && GameState.selectedRolesConfig['spy'] > 0) {
                     const spyTarget = GameState.players.find(p => p.id === GameState.nightActions.spyTargetId);
                     if (spyTarget) {
                         roundLogs.push(`👁️ SPY inspected ${spyTarget.name} → Role: ${ROLE_DATABASE[spyTarget.roleId].name}.`);
                     }
                 }
 
-                if (GameState.nightActions.sirTargetId) {
+                if (GameState.nightActions.sirTargetId && GameState.selectedRolesConfig['sir'] > 0) {
                     const sirTarget = GameState.players.find(p => p.id === GameState.nightActions.sirTargetId);
                     if (sirTarget) {
                         const alignment = AlignmentEngine.getSirAlignment(sirTarget.id);
@@ -1731,8 +1736,7 @@ tailwind.config = {
                     }
                 }
 
-                // Town Crier morning announcement
-                if (GameState.townCrierMessages[round]) {
+                if (GameState.townCrierMessages[round] && GameState.selectedRolesConfig['town_crier'] > 0) {
                     roundLogs.push(`📢 Town Crier's Morning Announcement: "${GameState.townCrierMessages[round]}"`);
                 }
 
@@ -1743,12 +1747,10 @@ tailwind.config = {
                     timestamp: new Date().toLocaleTimeString()
                 });
 
-                // Check if Hunter triggered last shot
-                if (GameState.pendingHunterPlayer) {
+                if (GameState.pendingHunterPlayer && GameState.selectedRolesConfig['hunter'] > 0) {
                     GameState.phase = 'HUNTER_SHOT';
                     AppController.updateDashboard();
                 } else {
-                    // Transition to Day
                     GameState.phase = 'DAY';
                     AppController.updateDashboard();
                 }
@@ -1756,75 +1758,97 @@ tailwind.config = {
         };
 
         /**
-         * 8. VOTING SYSTEM & SPIN WHEEL TIE BREAKER
+         * UPDATED VOTING ENGINE: JUDGE MANUAL INPUT & RESOLUTION
          */
         const VotingEngine = {
             renderVotingInterface: function() {
                 const alivePlayers = GameState.players.filter(p => p.status === 'ALIVE');
                 return `
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between pb-3 border-b border-border">
                             <div>
-                                <h4 class="font-bold text-text-primary text-sm"><i class="fa-solid fa-users-rectangle text-warning mr-2"></i> Daytime Vote Elimination</h4>
-                                <p class="text-xs text-text-secondary">All alive players vote. Princess cannot be eliminated by vote. Self-voting is prohibited.</p>
+                                <h4 class="font-bold text-text-primary text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-gavel text-warning"></i> Judge Vote Result & Entry System
+                                </h4>
+                                <p class="text-xs text-text-secondary mt-0.5">The Judge conducts the vote manually outside the app[cite: 1]. Select players who received votes and enter their vote counts below[cite: 1].</p>
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[40vh] overflow-y-auto pr-2" id="voting-inputs-container">
-                            ${alivePlayers.map((p, idx) => `
-                                <div class="bg-surface border border-border p-3 rounded-xl flex items-center justify-between gap-3">
-                                    <span class="text-xs font-bold text-text-primary">${p.name} (<span class="text-text-secondary">${ROLE_DATABASE[p.roleId].name}</span>) voted for:</span>
-                                    <select id="vote-target-${p.id}" class="vote-select bg-background border border-border text-xs text-text-primary rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-warning font-medium w-40">
-                                        <option value="">-- No Vote / Skip --</option>
-                                        ${alivePlayers.filter(target => target.id !== p.id).map(target => `<option value="${target.id}">${target.name}</option>`).join('')}
-                                    </select>
+                        <div class="space-y-3 max-h-[45vh] overflow-y-auto pr-2" id="judge-vote-entries">
+                            ${alivePlayers.map(p => `
+                                <div class="bg-surface border border-border p-3 rounded-xl flex items-center justify-between gap-4">
+                                    <div class="flex items-center gap-3">
+                                        <input type="checkbox" id="judge-chk-${p.id}" onchange="VotingEngine.toggleVoteInput('${p.id}')" class="w-4 h-4 accent-warning cursor-pointer">
+                                        <label for="judge-chk-${p.id}" class="text-xs font-bold text-text-primary cursor-pointer">
+                                            ${p.name} <span class="text-text-secondary font-mono">(${ROLE_DATABASE[p.roleId].name})</span>
+                                        </label>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs text-text-secondary font-mono">Votes:</span>
+                                        <input type="number" id="judge-votes-${p.id}" min="0" max="20" value="0" disabled class="w-16 bg-background border border-border rounded-lg px-2 py-1 text-center text-xs font-bold font-mono text-text-primary focus:outline-none focus:border-warning disabled:opacity-40">
+                                    </div>
                                 </div>
                             `).join('')}
                         </div>
 
-                        <button onclick="VotingEngine.tallyVotes()" class="w-full bg-warning hover:bg-warning/90 text-secondary font-bold py-3 px-6 rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
-                            <i class="fa-solid fa-scale-balanced"></i> Tally Votes & Determine Outcome
+                        <button onclick="VotingEngine.processJudgeVotes()" class="w-full bg-warning hover:bg-warning/90 text-secondary font-bold py-3 px-6 rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
+                            <i class="fa-solid fa-scale-balanced"></i> Process Judge Vote Result
                         </button>
                     </div>
                 `;
             },
 
-            tallyVotes: function() {
+            toggleVoteInput: function(playerId) {
+                const chk = document.getElementById(`judge-chk-${playerId}`);
+                const input = document.getElementById(`judge-votes-${playerId}`);
+                if (chk && input) {
+                    input.disabled = !chk.checked;
+                    if (!chk.checked) {
+                        input.value = '0';
+                    } else if (input.value === '0') {
+                        input.value = '1';
+                    }
+                }
+            },
+
+            processJudgeVotes: function() {
                 const alivePlayers = GameState.players.filter(p => p.status === 'ALIVE');
-                const voteCounts = {}; // targetPlayerId -> count
-                const voterRecord = [];
+                const recordedVotes = {};
+                let hasEntries = false;
 
                 alivePlayers.forEach(p => {
-                    const select = document.getElementById(`vote-target-${p.id}`);
-                    if (select && select.value) {
-                        const targetId = select.value;
-                        voteCounts[targetId] = (voteCounts[targetId] || 0) + 1;
-                        voterRecord.push({ voter: p.name, target: GameState.players.find(x=>x.id===targetId)?.name });
+                    const chk = document.getElementById(`judge-chk-${p.id}`);
+                    const input = document.getElementById(`judge-votes-${p.id}`);
+                    if (chk && chk.checked && input) {
+                        const val = parseInt(input.value) || 0;
+                        if (val > 0) {
+                            recordedVotes[p.id] = val;
+                            hasEntries = true;
+                        }
                     }
                 });
 
-                if (Object.keys(voteCounts).length === 0) {
-                    alert('No votes were recorded.');
+                if (!hasEntries) {
+                    alert('Please select at least one player and enter vote counts.');
                     return;
                 }
 
-                // Find max votes
-                let maxVotes = 0;
+                let maxVotes = -1;
                 let topTargets = [];
-                Object.keys(voteCounts).forEach(targetId => {
-                    const count = voteCounts[targetId];
+
+                Object.keys(recordedVotes).forEach(id => {
+                    const count = recordedVotes[id];
                     if (count > maxVotes) {
                         maxVotes = count;
-                        topTargets = [targetId];
+                        topTargets = [id];
                     } else if (count === maxVotes) {
-                        topTargets.push(targetId);
+                        topTargets.push(id);
                     }
                 });
 
-                // Check Princess rule: Princess cannot be eliminated by vote
                 topTargets = topTargets.filter(id => {
                     const pl = GameState.players.find(p => p.id === id);
-                    if (pl && pl.roleId === 'princess') {
+                    if (pl && pl.roleId === 'princess' && GameState.selectedRolesConfig['princess'] > 0) {
                         GameState.eventLog.unshift({
                             round: GameState.currentRound,
                             phase: 'VOTE RESULT',
@@ -1843,20 +1867,22 @@ tailwind.config = {
 
                 if (topTargets.length === 1) {
                     const eliminated = GameState.players.find(p => p.id === topTargets[0]);
-                    this.executeVoteElimination(eliminated, maxVotes, voterRecord);
+                    this.executeVoteElimination(eliminated, maxVotes, recordedVotes);
                 } else {
-                    // TIE DETECTED -> Trigger Spin Wheel
                     GameState.tiedPlayersForWheel = topTargets.map(id => GameState.players.find(p => p.id === id));
-                    this.openWheelModal();
+                    this.openWheelModal(recordedVotes);
                 }
             },
 
-            executeVoteElimination: function(player, voteCount, voterRecord) {
+            executeVoteElimination: function(player, voteCount, recordedVotes) {
                 DeathResolutionEngine.resolveDeath(player, 'VOTE', GameState.currentRound);
 
-                let logText = `<strong>Day ${GameState.currentRound} Vote Elimination:</strong><br>`;
-                voterRecord.forEach(v => { logText += `• ${v.voter} voted for ${v.target}<br>`; });
-                logText += `💀 <strong>${player.name} (${ROLE_DATABASE[player.roleId].name})</strong> was eliminated by daytime vote (${voteCount} votes).`;
+                let logText = `<strong>DAY ${GameState.currentRound} — VOTING</strong><br><br>`;
+                Object.keys(recordedVotes).forEach(id => {
+                    const pl = GameState.players.find(p => p.id === id);
+                    if (pl) logText += `${pl.name} — ${recordedVotes[id]} votes<br>`;
+                });
+                logText += `<br><strong>VOTED OUT</strong><br>${player.name}<br>Role: ${ROLE_DATABASE[player.roleId].name}<br>Cause: VOTE`;
 
                 GameState.eventLog.unshift({
                     round: GameState.currentRound,
@@ -1865,8 +1891,7 @@ tailwind.config = {
                     timestamp: new Date().toLocaleTimeString()
                 });
 
-                // Check Hunter trigger
-                if (GameState.pendingHunterPlayer) {
+                if (GameState.pendingHunterPlayer && GameState.selectedRolesConfig['hunter'] > 0) {
                     GameState.phase = 'HUNTER_SHOT';
                     AppController.updateDashboard();
                 } else {
@@ -1874,7 +1899,7 @@ tailwind.config = {
                 }
             },
 
-            openWheelModal: function() {
+            openWheelModal: function(recordedVotes) {
                 const disk = document.getElementById('wheel-disk');
                 disk.innerHTML = '';
                 disk.classList.remove('spinning');
@@ -1883,7 +1908,6 @@ tailwind.config = {
                 document.getElementById('btn-close-wheel').classList.add('hidden');
 
                 const count = GameState.tiedPlayersForWheel.length;
-                const colors = ['#DC143C', '#B91C1C', '#10B981', '#F59E0B', '#EF4444'];
 
                 GameState.tiedPlayersForWheel.forEach((p, idx) => {
                     const slice = document.createElement('div');
@@ -1893,12 +1917,14 @@ tailwind.config = {
                     disk.appendChild(slice);
                 });
 
+                // Save temporary recorded votes in closure/state for wheel resolution log
+                GameState._tempRecordedVotes = recordedVotes;
                 document.getElementById('wheel-modal-backdrop').classList.remove('hidden');
             },
 
             closeWheelModal: function() {
                 document.getElementById('wheel-modal-backdrop').classList.add('hidden');
-                if (GameState.pendingHunterPlayer) {
+                if (GameState.pendingHunterPlayer && GameState.selectedRolesConfig['hunter'] > 0) {
                     GameState.phase = 'HUNTER_SHOT';
                 } else {
                     this.advanceToNextNight();
@@ -1915,15 +1941,24 @@ tailwind.config = {
                     const selectedIdx = Math.floor(Math.random() * GameState.tiedPlayersForWheel.length);
                     const eliminated = GameState.tiedPlayersForWheel[selectedIdx];
 
-                    document.getElementById('wheel-result-display').innerText = `Selected by Wheel: ${eliminated.name} (${ROLE_DATABASE[eliminated.roleId].name})`;
+                    document.getElementById('wheel-result-display').innerText = `SELECTED: ${eliminated.name.toUpperCase()}`;
                     document.getElementById('btn-close-wheel').classList.remove('hidden');
 
                     DeathResolutionEngine.resolveDeath(eliminated, 'VOTE', GameState.currentRound);
 
+                    let logText = `<strong>DAY ${GameState.currentRound} — VOTING</strong><br><br>`;
+                    if (GameState._tempRecordedVotes) {
+                        Object.keys(GameState._tempRecordedVotes).forEach(id => {
+                            const pl = GameState.players.find(p => p.id === id);
+                            if (pl) logText += `${pl.name} — ${GameState._tempRecordedVotes[id]} votes<br>`;
+                        });
+                    }
+                    logText += `<br>TIE DETECTED<br><br>SPIN WHEEL<br><br>Selected: ${eliminated.name}<br><br>${eliminated.name} — DEAD<br>Role: ${ROLE_DATABASE[eliminated.roleId].name}<br>Cause: VOTE`;
+
                     GameState.eventLog.unshift({
                         round: GameState.currentRound,
                         phase: 'TIE BREAKER WHEEL',
-                        text: `⚖️ Vote tie detected! Spin Wheel selected <strong>${eliminated.name} (${ROLE_DATABASE[eliminated.roleId].name})</strong> for elimination.`,
+                        text: logText,
                         timestamp: new Date().toLocaleTimeString()
                     });
                 }, 3100);
@@ -2000,7 +2035,6 @@ tailwind.config = {
             }
         };
 
-        // Initialize application on load
         window.onload = function() {
             AppController.init();
         };
