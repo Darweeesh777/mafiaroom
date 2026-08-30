@@ -933,17 +933,37 @@ tailwind.config = {
                 this.goToStep('step-player-names');
             },
 
+            getDefaultNamesList: function() {
+                return [
+                    "ROFA",
+                    "IDRIS",
+                    "FARAG",
+                    "MAZEN KHATER",
+                    "MAZEN TAMER",
+                    "MOUSSA",
+                    "SHIKA",
+                    "3RAQI",
+                    "ZAFFER",
+                    "GINDI",
+                    "YOUSSEF ARAFA",
+                    "SEIF",
+                    "NADEEM"
+                ];
+            },
+
             renderPlayerNameInputs: function() {
                 const container = document.getElementById('player-names-container');
                 container.innerHTML = '';
                 
+                const defaultNames = this.getDefaultNamesList();
+
                 if (!GameState.players || GameState.players.length !== GameState.playerCount) {
-                    const sampleNames = ['Ahmed', 'Mohamed', 'Omar', 'Ali', 'Karim', 'Youssef', 'Hassan', 'Mostafa', 'Khaled', 'Mahmoud', 'Tarek', 'Ziad', 'Amr', 'Ibrahim'];
                     GameState.players = [];
                     for (let i = 0; i < GameState.playerCount; i++) {
+                        const name = i < defaultNames.length ? defaultNames[i] : "PLAYER NAME";
                         GameState.players.push({
                             id: 'p_' + (i + 1),
-                            name: sampleNames[i] || `Player ${i + 1}`,
+                            name: name,
                             roleId: null,
                             status: 'ALIVE',
                             deathRound: null,
@@ -957,7 +977,7 @@ tailwind.config = {
                     div.className = 'flex items-center gap-2.5 bg-background p-2 rounded-xl border border-border';
                     div.innerHTML = `
                         <span class="w-6 text-xs font-mono text-text-secondary/70 text-right">${idx + 1}.</span>
-                        <input type="text" id="player-input-${idx}" value="${player.name}" oninput="AppController.updatePlayerName(${idx}, this.value)" placeholder="Player Name" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-xs sm:text-sm text-text-primary focus:outline-none focus:border-primary font-medium">
+                        <input type="text" id="player-input-${idx}" value="${player.name}" oninput="AppController.updatePlayerName(${idx}, this.value)" placeholder="PLAYER NAME" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-xs sm:text-sm text-text-primary focus:outline-none focus:border-primary font-medium">
                     `;
                     container.appendChild(div);
                 });
@@ -970,10 +990,10 @@ tailwind.config = {
             },
 
             fillDefaultNames: function() {
-                const sampleNames = ['Ahmed', 'Mohamed', 'Omar', 'Ali', 'Karim', 'Youssef', 'Hassan', 'Mostafa', 'Khaled', 'Mahmoud', 'Tarek', 'Ziad', 'Amr', 'Ibrahim'];
+                const defaultNames = this.getDefaultNamesList();
                 for (let i = 0; i < GameState.playerCount; i++) {
                     if (GameState.players[i]) {
-                        GameState.players[i].name = sampleNames[i] || `Player ${i + 1}`;
+                        GameState.players[i].name = i < defaultNames.length ? defaultNames[i] : "PLAYER NAME";
                         const input = document.getElementById(`player-input-${i}`);
                         if (input) input.value = GameState.players[i].name;
                     }
