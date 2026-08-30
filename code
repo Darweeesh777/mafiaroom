@@ -1,0 +1,2009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mafia Game Master / Judge Management System v2.0</title>
+    <!-- Tailwind CSS for modern, clean, responsive UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for professional icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+tailwind.config = {
+    darkMode: 'class',
+    theme: {
+        extend: {
+            colors: {
+                background: 'var(--color-background)',
+                surface: 'var(--color-surface)',
+                card: 'var(--color-card)',
+                primary: {
+                    DEFAULT: 'var(--color-primary)',
+                    hover: 'var(--color-primary-hover)',
+                },
+                accent: 'var(--color-accent)',
+                secondary: 'var(--color-secondary)',
+                'text-primary': 'var(--color-text-primary)',
+                'text-secondary': 'var(--color-text-secondary)',
+                border: 'var(--color-border)',
+                success: 'var(--color-success)',
+                warning: 'var(--color-warning)',
+                danger: 'var(--color-danger)',
+            },
+            borderRadius: {
+                sm: 'var(--radius-sm)',
+                md: 'var(--radius-md)',
+                lg: 'var(--radius-lg)',
+            },
+            boxShadow: {
+                sm: 'var(--shadow-sm)',
+                md: 'var(--shadow-md)',
+            }
+        }
+    }
+}
+    </script>
+    <style>
+        :root {
+            --color-primary: #DC143C;
+            --color-primary-hover: #B91C1C;
+            --color-secondary: #FFFFFF;
+            --color-accent: #DC143C;
+            --color-background: #09090B;
+            --color-surface: #121216;
+            --color-card: #18181B;
+            --color-text-primary: #F4F4F5;
+            --color-text-secondary: #A1A1AA;
+            --color-border: #27272A;
+            --color-success: #10B981;
+            --color-warning: #F59E0B;
+            --color-danger: #EF4444;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.6);
+        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--color-surface); }
+        ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-sm); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--color-text-secondary); }
+        input[type="range"] { accent-color: var(--color-primary); }
+        .app-logo { height: 48px; width: auto; object-fit: contain; display: block; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes spinWheelAnim {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(1440deg); }
+        }
+        .spinning { animation: spinWheelAnim 3s cubic-bezier(0.15, 0.9, 0.2, 1) forwards; }
+    </style>
+</head>
+<body class="bg-background text-text-primary min-h-screen flex flex-col font-sans selection:bg-primary selection:text-secondary">
+
+    <!-- HEADER -->
+    <header class="bg-surface border-b border-border sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <img src="WhatsApp Image 2026-08-11 at 2.25.38 PM.jpeg" alt="Mafia Judge Master Logo" class="app-logo rounded-lg shadow-sm">
+                <div>
+                    <h1 class="text-lg font-bold tracking-wide text-text-primary flex items-center gap-2">
+                        MAFIA JUDGE MASTER <span class="text-xs bg-primary/10 text-primary border border-primary/30 px-2 py-0.5 rounded-full font-mono">v2.0 Advanced Control</span>
+                    </h1>
+                    <p class="text-xs text-text-secondary">Modular Role & Night/Day Resolution Engine</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div id="header-status-badge" class="hidden items-center space-x-3 bg-card/80 border border-border px-3 py-1.5 rounded-lg text-xs font-mono">
+                    <div><span class="text-text-secondary">Game ID:</span> <span id="hdr-game-id" class="text-primary font-bold">---</span></div>
+                    <div class="h-3 w-[1px] bg-border"></div>
+                    <div><span class="text-text-secondary">Phase:</span> <span id="hdr-phase" class="text-warning font-bold uppercase">---</span></div>
+                    <div class="h-3 w-[1px] bg-border"></div>
+                    <div><span class="text-text-secondary">Round:</span> <span id="hdr-round" class="text-success font-bold">1</span></div>
+                </div>
+                <button id="btn-new-game" onclick="AppController.confirmNewGame()" class="hidden bg-primary hover:bg-primary-hover text-secondary font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition items-center gap-2 border border-primary/40" title="Start a completely new game">
+                    <i class="fa-solid fa-rotate-left"></i> NEW GAME
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col">
+        
+        <!-- STEP 1: CREATE GAME & PLAYER COUNT -->
+        <section id="step-create-game" class="view-section flex-1 flex flex-col items-center justify-center animate-fade-in max-w-xl mx-auto w-full py-10">
+            <div class="bg-surface border border-border rounded-2xl p-8 shadow-md w-full">
+                <div class="text-center mb-6">
+                    <div class="inline-flex p-3 bg-primary/10 border border-primary/20 rounded-full text-primary mb-3">
+                        <i class="fa-solid fa-chess-board text-2xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-text-primary">Create New Mafia Game</h2>
+                    <p class="text-text-secondary text-sm mt-1">Configure player count (4 to 20) to proceed with role distribution.</p>
+                </div>
+
+                <div class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-semibold text-text-secondary mb-2">Number of Players:</label>
+                        <div class="flex items-center gap-3">
+                            <input type="range" id="player-count-range" min="4" max="20" value="13" class="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer accent-primary" oninput="document.getElementById('player-count-input').value = this.value">
+                            <input type="number" id="player-count-input" min="4" max="20" value="13" class="w-20 bg-background border border-border rounded-lg px-3 py-2 text-center text-lg font-bold text-text-primary focus:outline-none focus:border-primary" oninput="document.getElementById('player-count-range').value = this.value">
+                        </div>
+                        <p class="text-xs text-text-secondary/70 mt-1">Supports up to all 13 standard roles.</p>
+                    </div>
+
+                    <button onclick="AppController.proceedToRoleSelection()" class="w-full bg-primary hover:bg-primary-hover text-secondary font-bold py-3.5 px-4 rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+                        <span>Continue to Role Selection</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- STEP 2: ROLE SELECTION -->
+        <section id="step-role-selection" class="view-section hidden animate-fade-in w-full max-w-4xl mx-auto py-6 flex-col">
+            <div class="bg-surface border border-border rounded-2xl p-6 shadow-md flex flex-col flex-1">
+                <div class="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-border gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-text-primary flex items-center gap-2">
+                            <i class="fa-solid fa-masks-theater text-primary"></i> Role Configuration & Allocation
+                        </h2>
+                        <p class="text-sm text-text-secondary">Select role quantities to match total player count. Exactly 1 role per player.</p>
+                    </div>
+                    <div id="role-counter-badge" class="flex items-center gap-3 bg-background px-4 py-2 rounded-xl border border-border">
+                        <span class="text-sm text-text-secondary font-medium">Slots Assigned:</span>
+                        <span id="role-count-display" class="text-lg font-bold font-mono text-warning">0 / 13</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 my-6" id="roles-grid">
+                    <!-- Dynamic Role Cards populated by JS -->
+                </div>
+
+                <div id="role-validation-msg" class="hidden mb-4 p-3 bg-danger/10 border border-danger/40 rounded-lg text-danger/80 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span id="role-validation-text">Total assigned roles must match player count!</span>
+                </div>
+
+                <div class="flex items-center justify-between pt-4 border-t border-border mt-auto">
+                    <button onclick="AppController.goToStep('step-create-game')" class="bg-card hover:bg-border text-text-secondary font-semibold py-2.5 px-5 rounded-xl transition flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> Back
+                    </button>
+                    <button id="btn-proceed-names" onclick="AppController.proceedToPlayerNames()" class="bg-primary hover:bg-primary-hover text-secondary font-bold py-2.5 px-6 rounded-xl shadow-sm transition flex items-center gap-2 opacity-50 cursor-not-allowed" disabled>
+                        <span>Enter Player Names</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- STEP 3: PLAYER NAMES INPUT -->
+        <section id="step-player-names" class="view-section hidden animate-fade-in w-full max-w-3xl mx-auto py-6 flex-col">
+            <div class="bg-surface border border-border rounded-2xl p-6 shadow-md">
+                <div class="pb-6 border-b border-border flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold text-text-primary flex items-center gap-2">
+                            <i class="fa-solid fa-users text-primary"></i> Enter Player Names
+                        </h2>
+                        <p class="text-sm text-text-secondary">Provide unique names for all participating players.</p>
+                    </div>
+                    <button onclick="AppController.fillDefaultNames()" class="text-xs bg-card hover:bg-border text-text-secondary px-3 py-1.5 rounded-lg border border-border transition">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1 text-warning"></i> Auto-fill 13 Names
+                    </button>
+                </div>
+
+                <div id="player-names-container" class="grid grid-cols-1 md:grid-cols-2 gap-3 my-6 max-h-[50vh] overflow-y-auto pr-2">
+                    <!-- Dynamic Player Name Inputs -->
+                </div>
+
+                <div class="flex items-center justify-between pt-4 border-t border-border">
+                    <button onclick="AppController.goToStep('step-role-selection')" class="bg-card hover:bg-border text-text-secondary font-semibold py-2.5 px-5 rounded-xl transition flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> Back
+                    </button>
+                    <button onclick="AppController.randomizeAndReviewRoles()" class="bg-primary hover:bg-primary-hover text-secondary font-bold py-2.5 px-6 rounded-xl shadow-sm transition flex items-center gap-2">
+                        <span>Randomize Roles</span>
+                        <i class="fa-solid fa-shuffle"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- STEP 4: JUDGE ROLE REVIEW -->
+        <section id="step-role-review" class="view-section hidden animate-fade-in w-full max-w-4xl mx-auto py-6 flex-col">
+            <div class="bg-surface border border-border rounded-2xl p-6 shadow-md flex flex-col flex-1">
+                <div class="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-border gap-4">
+                    <div>
+                        <div class="flex items-center gap-2 text-warning text-xs font-mono uppercase font-bold tracking-wider mb-1">
+                            <i class="fa-solid fa-lock"></i> Judge-Only Confidential View
+                        </div>
+                        <h2 class="text-xl font-bold text-text-primary">Role Assignment Overview</h2>
+                        <p class="text-sm text-text-secondary">Review assigned roles. 1 player = 1 unique role.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="AppController.randomizeRolesOnly()" class="bg-card hover:bg-border text-warning border border-warning/30 font-semibold py-2.5 px-4 rounded-xl transition flex items-center gap-2 text-sm">
+                            <i class="fa-solid fa-shuffle"></i> Randomize Again
+                        </button>
+                    </div>
+                </div>
+
+                <div class="my-6 overflow-x-auto rounded-xl border border-border bg-background">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-surface/90 text-text-secondary text-xs uppercase font-mono border-b border-border">
+                                <th class="p-3.5 pl-4">#</th>
+                                <th class="p-3.5">Player Name</th>
+                                <th class="p-3.5">Assigned Role</th>
+                                <th class="p-3.5">Team</th>
+                                <th class="p-3.5 pr-4">Initial Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assignment-table-body" class="divide-y divide-border/60 text-sm">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex items-center justify-between pt-4 border-t border-border">
+                    <button onclick="AppController.goToStep('step-player-names')" class="bg-card hover:bg-border text-text-secondary font-semibold py-2.5 px-5 rounded-xl transition flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> Edit Names
+                    </button>
+                    <button onclick="AppController.confirmRolesAndStartGame()" class="bg-success hover:bg-success/90 text-secondary font-bold py-3 px-6 rounded-xl shadow-sm transition flex items-center gap-2">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>Confirm Roles & Start Night 1</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- STEP 5: LIVE GAME DASHBOARD & NIGHT/DAY PHASES -->
+        <section id="step-game-dashboard" class="view-section hidden animate-fade-in w-full max-w-7xl mx-auto py-4 flex-col flex-1">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
+                
+                <!-- COLUMN 1 & 2: GAMEPLAY CONTROL PANEL & PLAYER ROSTER -->
+                <div class="lg:col-span-2 flex flex-col gap-6">
+                    
+                    <!-- Phase Banner & Action Wizard Card -->
+                    <div class="bg-surface border border-border rounded-2xl p-5 shadow-md flex flex-col gap-4">
+                        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pb-4 border-b border-border">
+                            <div class="flex items-center gap-4">
+                                <div id="phase-icon-box" class="w-12 h-12 rounded-2xl bg-surface border border-primary/30 flex items-center justify-center text-primary text-xl shadow-inner">
+                                    <i class="fa-solid fa-moon"></i>
+                                </div>
+                                <div>
+                                    <div class="text-xs font-mono text-text-secondary uppercase tracking-wider">Current Phase</div>
+                                    <h3 id="dashboard-phase-title" class="text-xl font-bold text-text-primary flex items-center gap-2">
+                                        NIGHT 1 <span class="text-xs bg-primary/15 text-primary/80 border border-primary/30 px-2 py-0.5 rounded-full font-sans font-semibold">Night Sequence Active</span>
+                                    </h3>
+                                </div>
+                            </div>
+                            <div id="phase-header-action-btn">
+                                <!-- Rendered dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Active Wizard / Phase Action Panel -->
+                        <div id="phase-wizard-container" class="bg-background border border-border/80 rounded-xl p-4">
+                            <!-- Dynamic wizard steps for night or day voting -->
+                        </div>
+                    </div>
+
+                    <!-- Players Grid / Roster with Special State Badges -->
+                    <div class="bg-surface border border-border rounded-2xl p-6 shadow-md flex flex-col flex-1">
+                        <div class="flex items-center justify-between mb-4 pb-3 border-b border-border">
+                            <h3 class="font-bold text-text-primary flex items-center gap-2">
+                                <i class="fa-solid fa-id-card-clip text-primary"></i> Player Roster & Special States
+                            </h3>
+                            <div class="flex items-center gap-2 text-xs font-mono text-text-secondary">
+                                <span class="inline-block w-2.5 h-2.5 rounded-full bg-success"></span> Alive: <span id="stat-alive-count" class="text-text-primary font-bold">0</span>
+                                <span class="inline-block w-2.5 h-2.5 rounded-full bg-danger ml-2"></span> Dead: <span id="stat-dead-count" class="text-text-primary font-bold">0</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="dashboard-players-grid">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- COLUMN 3: EVENT LOG & ABILITY TRACKER -->
+                <div class="flex flex-col gap-6">
+                    
+                    <!-- Special Ability State Card -->
+                    <div class="bg-surface border border-border rounded-2xl p-5 shadow-md">
+                        <h3 class="font-bold text-text-primary text-sm mb-3 flex items-center gap-2 pb-2 border-b border-border">
+                            <i class="fa-solid fa-star text-warning"></i> One-Time Ability Status
+                        </h3>
+                        <div class="space-y-2 text-xs font-mono" id="special-abilities-status-list">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Permanent Event Log -->
+                    <div class="bg-surface border border-border rounded-2xl p-5 shadow-md flex flex-col h-[500px]">
+                        <div class="flex items-center justify-between pb-3 border-b border-border mb-3">
+                            <h3 class="font-bold text-text-primary flex items-center gap-2">
+                                <i class="fa-solid fa-scroll text-warning"></i> Permanent Game Log
+                            </h3>
+                            <span class="text-xs bg-card text-text-secondary px-2.5 py-1 rounded-lg font-mono">Immutable</span>
+                        </div>
+
+                        <div id="game-event-log" class="flex-1 overflow-y-auto space-y-3 pr-1 text-sm bg-background p-3.5 rounded-xl border border-border/80 font-mono">
+                            <!-- Log entries populated here -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL POPUP -->
+    <div id="modal-backdrop" class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div id="modal-box" class="bg-surface border border-border rounded-2xl p-6 max-w-md w-full shadow-md animate-fade-in">
+            <div id="modal-icon-container" class="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center text-xl mb-4">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 id="modal-title" class="text-lg font-bold text-text-primary mb-2">Confirm Action</h3>
+            <p id="modal-message" class="text-sm text-text-secondary mb-6">Are you sure you want to execute this action?</p>
+            <div class="flex items-center justify-end gap-3">
+                <button onclick="UIModal.close()" class="bg-card hover:bg-border text-text-secondary font-semibold px-4 py-2 rounded-xl text-sm transition">Cancel</button>
+                <button id="modal-confirm-btn" class="bg-primary hover:bg-primary-hover text-secondary font-bold px-5 py-2 rounded-xl text-sm transition shadow-sm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SPIN WHEEL MODAL FOR TIE BREAKING -->
+    <div id="wheel-modal-backdrop" class="fixed inset-0 bg-background/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-surface border border-border rounded-2xl p-6 max-w-lg w-full shadow-md flex flex-col items-center animate-fade-in">
+            <div class="w-12 h-12 rounded-xl bg-warning/10 border border-warning/20 text-warning flex items-center justify-center text-xl mb-3">
+                <i class="fa-solid fa-dharmachakra"></i>
+            </div>
+            <h3 class="text-xl font-bold text-text-primary mb-1">Vote Tie-Breaker Wheel</h3>
+            <p class="text-sm text-text-secondary mb-6 text-center">Multiple players received the highest vote count. Spin the wheel to eliminate one randomly.</p>
+            
+            <div class="relative w-64 h-64 my-4 flex items-center justify-center bg-background border-4 border-border rounded-full overflow-hidden shadow-inner">
+                <div id="wheel-pointer" class="absolute top-0 z-20 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[20px] border-t-primary drop-shadow"></div>
+                <div id="wheel-disk" class="w-full h-full flex items-center justify-center relative transition-transform duration-3000">
+                    <!-- Slices rendered dynamically -->
+                </div>
+            </div>
+
+            <div id="wheel-result-display" class="h-8 my-3 text-success font-bold font-mono text-center"></div>
+
+            <div class="flex items-center gap-3 w-full mt-4">
+                <button id="btn-spin-wheel" onclick="VotingEngine.executeSpinWheel()" class="flex-1 bg-warning hover:bg-warning/90 text-secondary font-bold py-3 px-6 rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play"></i> Spin Wheel Now
+                </button>
+                <button id="btn-close-wheel" onclick="VotingEngine.closeWheelModal()" class="hidden bg-card hover:bg-border text-text-primary font-bold py-3 px-6 rounded-xl transition">
+                    Continue with Elimination
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * 1. CENTRAL ROLE DATABASE & ALIGNMENT DEFINITIONS
+         */
+        const ROLE_DATABASE = {
+            'boss': {
+                id: 'boss',
+                name: 'Boss',
+                team: 'MAFIA',
+                alignment: 'BAD',
+                description: 'Leader of the Mafia syndicate. Commands night kills.',
+                icon: 'fa-skull-crossbones',
+                color: 'text-primary bg-primary/10 border-primary/30'
+            },
+            'underboss': {
+                id: 'underboss',
+                name: 'Underboss',
+                team: 'MAFIA',
+                alignment: 'BAD',
+                description: 'Second-in-command. Becomes active Mafia leader if Boss dies.',
+                icon: 'fa-user-secret',
+                color: 'text-danger bg-danger/10 border-danger/30'
+            },
+            'spy': {
+                id: 'spy',
+                name: 'SPY',
+                team: 'MAFIA',
+                alignment: 'BAD',
+                description: 'Wakes with Mafia and investigates role of any non-boss/underboss player.',
+                icon: 'fa-eye',
+                color: 'text-primary bg-primary/10 border-primary/30'
+            },
+            'king': {
+                id: 'king',
+                name: 'The King',
+                team: 'TOWN',
+                alignment: 'GOOD',
+                description: 'Immune to Mafia kills. Can be eliminated by vote or assassin/hunter.',
+                icon: 'fa-crown',
+                color: 'text-warning bg-warning/10 border-warning/30'
+            },
+            'princess': {
+                id: 'princess',
+                name: 'Princess',
+                team: 'TOWN',
+                alignment: 'GOOD',
+                description: 'Immune to daytime city vote elimination.',
+                icon: 'fa-chess-queen',
+                color: 'text-warning bg-warning/10 border-warning/30'
+            },
+            'town_crier': {
+                id: 'town_crier',
+                name: 'Town Crier',
+                team: 'TOWN',
+                alignment: 'GOOD',
+                description: 'Sends anonymous messages read to the city each morning.',
+                icon: 'fa-bullhorn',
+                color: 'text-text-secondary bg-card border-border'
+            },
+            'bodyguard': {
+                id: 'bodyguard',
+                name: 'Bodyguard',
+                team: 'TOWN',
+                alignment: 'GOOD',
+                description: 'Can choose one player to protect permanently at the cost of own life against Mafia.',
+                icon: 'fa-shield',
+                color: 'text-success bg-success/10 border-success/30'
+            },
+            'clown': {
+                id: 'clown',
+                name: 'The Clown',
+                team: 'NEUTRAL',
+                alignment: 'GOOD',
+                description: 'Creates chaos in town with no special active ability.',
+                icon: 'fa-masks-theater',
+                color: 'text-warning bg-warning/10 border-warning/30'
+            },
+            'mazoon': {
+                id: 'mazoon',
+                name: 'Mazoon',
+                team: 'TOWN',
+                alignment: 'GOOD',
+                description: 'Marries two players on Night 1 so they share fates.',
+                icon: 'fa-book-open',
+                color: 'text-success bg-success/10 border-success/30'
+            },
+            'hunter': {
+                id: 'hunter',
+                name: 'Hunter',
+                team: 'TOWN',
+                alignment: 'GOOD',
+                description: 'Has one bullet that fires immediately when leaving the game.',
+                icon: 'fa-bow-arrow',
+                color: 'text-primary bg-primary/10 border-primary/30'
+            },
+            'sir': {
+                id: 'sir',
+                name: 'Sir',
+                team: 'TOWN',
+                alignment: 'GOOD',
+                description: 'Investigates players each night returning GOOD or BAD.',
+                icon: 'fa-magnifying-glass',
+                color: 'text-text-secondary bg-card border-border'
+            },
+            'doctor': {
+                id: 'doctor',
+                name: 'Doctor',
+                team: 'TOWN',
+                alignment: 'GOOD',
+                description: 'Protects one player each night from Mafia kills.',
+                icon: 'fa-stethoscope',
+                color: 'text-success bg-success/10 border-success/30'
+            },
+            'necro': {
+                id: 'necro',
+                name: 'Necro',
+                team: 'NEUTRAL',
+                alignment: 'GOOD',
+                description: 'Has one revival for the entire game.',
+                icon: 'fa-ghost',
+                color: 'text-text-secondary bg-card border-border'
+            },
+            'assassin': {
+                id: 'assassin',
+                name: 'Assassin',
+                team: 'MAFIA', // or special
+                alignment: 'GOOD', // Per specification: Necro and Assassin alignment for Sir is GOOD
+                description: 'Has one bullet for the entire game to kill any player.',
+                icon: 'fa-crosshairs',
+                color: 'text-warning bg-warning/10 border-warning/30'
+            }
+        };
+
+        /**
+         * 2. CENTRAL GAME STATE & PERSISTENCE
+         */
+        let GameState = {
+            gameId: 'MAFIA-' + Math.floor(1000 + Math.random() * 9000),
+            status: 'SETUP', // SETUP, RUNNING, FINISHED
+            currentRound: 1,
+            phase: 'NIGHT', // NIGHT, DAY, VOTING, HUNTER_SHOT
+            playerCount: 13,
+            selectedRolesConfig: {
+                'boss': 1,
+                'underboss': 1,
+                'spy': 1,
+                'king': 1,
+                'princess': 1,
+                'town_crier': 1,
+                'bodyguard': 1,
+                'clown': 1,
+                'mazoon': 1,
+                'hunter': 1,
+                'sir': 1,
+                'doctor': 1,
+                'necro': 1,
+                'assassin': 1
+            },
+            players: [], // { id, name, roleId, status: 'ALIVE'|'DEAD', deathRound, deathCause }
+            specialAbilityState: {
+                necroUsed: false,
+                assassinBulletUsed: false,
+                hunterBulletUsed: false,
+                bodyguardProtectionUsed: false,
+                mazoonMarriageUsed: false
+            },
+            marriage: {
+                active: false,
+                playerAId: null,
+                playerBId: null
+            },
+            bodyguardPermanentTargetId: null,
+            townCrierMessages: {}, // roundNumber -> text
+            nightActions: {
+                spyTargetId: null,
+                mafiaTargetId: null,
+                necroTargetId: null,
+                assassinUseBullet: false,
+                assassinTargetId: null,
+                bodyguardTargetId: null,
+                sirTargetId: null,
+                doctorTargetId: null,
+                townCrierMsgText: '',
+                mazoonPlayerAId: null,
+                mazoonPlayerBId: null
+            },
+            nightSequenceStep: 0, // 0 to 7
+            eventLog: [],
+            tiedPlayersForWheel: [],
+            pendingHunterPlayer: null
+        };
+
+        // Storage helper
+        const StorageManager = {
+            save: function() {
+                try {
+                    localStorage.setItem('mafia_game_state_v2', JSON.stringify(GameState));
+                } catch(e) {}
+            },
+            load: function() {
+                try {
+                    const saved = localStorage.getItem('mafia_game_state_v2');
+                    if (saved) {
+                        GameState = JSON.parse(saved);
+                        return true;
+                    }
+                } catch(e) {}
+                return false;
+            },
+            clearGameData: function() {
+                // Remove only this application's game state. Branding/app settings remain untouched.
+                try {
+                    localStorage.removeItem('mafia_game_state_v2');
+                } catch(e) {}
+                try {
+                    sessionStorage.removeItem('mafia_game_state_v2');
+                } catch(e) {}
+            }
+        };
+
+        /**
+         * 3. UI MODAL HELPER
+         */
+        const UIModal = {
+            show: function(title, message, iconClass, onConfirm, confirmLabel = 'Confirm') {
+                document.getElementById('modal-title').innerText = title;
+                document.getElementById('modal-message').innerText = message;
+                document.getElementById('modal-icon-container').innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+                const confirmBtn = document.getElementById('modal-confirm-btn');
+                const newBtn = confirmBtn.cloneNode(true);
+                confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+                newBtn.innerText = confirmLabel;
+                newBtn.onclick = function() {
+                    UIModal.close();
+                    if (onConfirm) onConfirm();
+                };
+                document.getElementById('modal-backdrop').classList.remove('hidden');
+            },
+            close: function() {
+                document.getElementById('modal-backdrop').classList.add('hidden');
+            }
+        };
+
+        /**
+         * 4. APP CONTROLLER & VIEW MANAGER
+         */
+        const AppController = {
+            init: function() {
+                if (StorageManager.load() && GameState.status === 'RUNNING') {
+                    this.goToStep('step-game-dashboard');
+                    this.updateDashboard();
+                    document.getElementById('header-status-badge').classList.remove('hidden');
+                    document.getElementById('header-status-badge').classList.add('flex');
+                    document.getElementById('hdr-game-id').innerText = GameState.gameId;
+                    const newGameBtn = document.getElementById('btn-new-game');
+                    newGameBtn.classList.remove('hidden');
+                    newGameBtn.classList.add('flex');
+                } else {
+                    this.renderRoleSelectionGrid();
+                    this.updateRoleCounter();
+                    const newGameBtn = document.getElementById('btn-new-game');
+                    newGameBtn.classList.add('hidden');
+                    newGameBtn.classList.remove('flex');
+                }
+            },
+
+            goToStep: function(stepId) {
+                document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+                document.getElementById(stepId).classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            },
+
+            confirmNewGame: function() {
+                UIModal.show(
+                    'Start New Game?',
+                    'Are you sure you want to start a new game? All current game data and logs will be cleared.',
+                    'fa-rotate-left text-primary bg-primary/10 border-primary/20',
+                    () => {
+                        this.startNewGame();
+                    },
+                    'New Game'
+                );
+            },
+
+            startNewGame: function() {
+                // Build a completely fresh state while preserving the application rules/configuration.
+                const freshRoleConfig = {};
+                Object.keys(ROLE_DATABASE).forEach(roleId => {
+                    freshRoleConfig[roleId] = 0;
+                });
+                // Preserve the initial/default role configuration used by the existing setup screen.
+                ['boss','underboss','spy','king','princess','town_crier','bodyguard','clown','mazoon','hunter','sir','doctor','necro','assassin'].forEach(roleId => {
+                    freshRoleConfig[roleId] = 1;
+                });
+
+                GameState = {
+                    gameId: 'MAFIA-' + Math.floor(1000 + Math.random() * 9000),
+                    status: 'SETUP',
+                    currentRound: 1,
+                    phase: 'NIGHT',
+                    playerCount: 13,
+                    selectedRolesConfig: freshRoleConfig,
+                    players: [],
+                    specialAbilityState: {
+                        necroUsed: false,
+                        assassinBulletUsed: false,
+                        hunterBulletUsed: false,
+                        bodyguardProtectionUsed: false,
+                        mazoonMarriageUsed: false
+                    },
+                    marriage: {
+                        active: false,
+                        playerAId: null,
+                        playerBId: null
+                    },
+                    bodyguardPermanentTargetId: null,
+                    townCrierMessages: {},
+                    nightActions: {
+                        spyTargetId: null,
+                        mafiaTargetId: null,
+                        necroTargetId: null,
+                        assassinUseBullet: false,
+                        assassinTargetId: null,
+                        bodyguardTargetId: null,
+                        sirTargetId: null,
+                        doctorTargetId: null,
+                        townCrierMsgText: '',
+                        mazoonPlayerAId: null,
+                        mazoonPlayerBId: null
+                    },
+                    nightSequenceStep: 0,
+                    eventLog: [],
+                    tiedPlayersForWheel: [],
+                    pendingHunterPlayer: null
+                };
+
+                StorageManager.clearGameData();
+                StorageManager.save();
+
+                // Close any open UI overlays.
+                UIModal.close();
+                const wheelModal = document.getElementById('wheel-modal-backdrop');
+                if (wheelModal) wheelModal.classList.add('hidden');
+
+                // Reset setup controls to the initial screen values.
+                const countRange = document.getElementById('player-count-range');
+                const countInput = document.getElementById('player-count-input');
+                if (countRange) countRange.value = '13';
+                if (countInput) countInput.value = '13';
+
+                const statusBadge = document.getElementById('header-status-badge');
+                if (statusBadge) {
+                    statusBadge.classList.add('hidden');
+                    statusBadge.classList.remove('flex');
+                }
+                const newGameBtn = document.getElementById('btn-new-game');
+                if (newGameBtn) {
+                    newGameBtn.classList.add('hidden');
+                    newGameBtn.classList.remove('flex');
+                }
+
+                this.goToStep('step-create-game');
+                this.renderRoleSelectionGrid();
+                this.updateRoleCounter();
+            },
+
+            proceedToRoleSelection: function() {
+                const count = parseInt(document.getElementById('player-count-input').value);
+                if (isNaN(count) || count < 4 || count > 20) {
+                    alert('Please enter a valid player count between 4 and 20.');
+                    return;
+                }
+                GameState.playerCount = count;
+                this.normalizeRoleCounts();
+                this.goToStep('step-role-selection');
+                this.renderRoleSelectionGrid();
+                this.updateRoleCounter();
+            },
+
+            renderRoleSelectionGrid: function() {
+                const container = document.getElementById('roles-grid');
+                container.innerHTML = '';
+                
+                Object.keys(ROLE_DATABASE).forEach(roleId => {
+                    const role = ROLE_DATABASE[roleId];
+                    const count = GameState.selectedRolesConfig[roleId] || 0;
+                    
+                    const card = document.createElement('div');
+                    card.className = `bg-background border ${count > 0 ? 'border-primary/50 bg-background/80 shadow-md' : 'border-border'} rounded-xl p-4 flex flex-col justify-between transition`;
+                    card.innerHTML = `
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="flex items-center gap-2 font-bold text-text-primary text-sm">
+                                    <i class="fa-solid ${role.icon} text-primary"></i> ${role.name}
+                                </span>
+                                <span class="text-xs font-mono px-2 py-0.5 rounded bg-surface text-text-secondary border border-border">${role.team}</span>
+                            </div>
+                            <p class="text-xs text-text-secondary mb-4 line-clamp-2">${role.description}</p>
+                        </div>
+                        <div class="flex items-center justify-between pt-3 border-t border-border/80">
+                            <span class="text-xs text-text-secondary font-mono">Quantity:</span>
+                            <div class="flex items-center gap-2">
+                                <button onclick="AppController.adjustRoleCount('${roleId}', -1)" class="w-7 h-7 bg-card hover:bg-border rounded-lg text-text-secondary flex items-center justify-center font-bold transition">-</button>
+                                <span id="role-qty-${roleId}" class="w-6 text-center font-mono font-bold text-text-primary">${count}</span>
+                                <button onclick="AppController.adjustRoleCount('${roleId}', 1)" class="w-7 h-7 bg-card hover:bg-border rounded-lg text-text-secondary flex items-center justify-center font-bold transition">+</button>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            },
+
+            adjustRoleCount: function(roleId, delta) {
+                const current = GameState.selectedRolesConfig[roleId] || 0;
+                const next = current + delta;
+                if (next < 0) return;
+                
+                GameState.selectedRolesConfig[roleId] = next;
+                document.getElementById(`role-qty-${roleId}`).innerText = next;
+                this.updateRoleCounter();
+            },
+
+            normalizeRoleCounts: function() {
+                let sum = Object.values(GameState.selectedRolesConfig).reduce((a, b) => a + b, 0);
+                if (sum !== GameState.playerCount) {
+                    // Adjust boss and doctor to match count
+                    GameState.selectedRolesConfig['boss'] = 1;
+                    GameState.selectedRolesConfig['doctor'] = 1;
+                    let remaining = GameState.playerCount - 2;
+                    const roles = Object.keys(ROLE_DATABASE).filter(r => r !== 'boss' && r !== 'doctor');
+                    roles.forEach(r => {
+                        if (remaining > 0) {
+                            GameState.selectedRolesConfig[r] = 1;
+                            remaining--;
+                        } else {
+                            GameState.selectedRolesConfig[r] = 0;
+                        }
+                    });
+                }
+            },
+
+            updateRoleCounter: function() {
+                let sum = Object.values(GameState.selectedRolesConfig).reduce((a, b) => a + b, 0);
+                const display = document.getElementById('role-count-display');
+                const btn = document.getElementById('btn-proceed-names');
+                const warning = document.getElementById('role-validation-msg');
+
+                display.innerText = `${sum} / ${GameState.playerCount}`;
+                
+                if (sum === GameState.playerCount) {
+                    display.className = 'text-lg font-bold font-mono text-success';
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    warning.classList.add('hidden');
+                } else {
+                    display.className = 'text-lg font-bold font-mono text-danger';
+                    btn.disabled = true;
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                    warning.classList.remove('hidden');
+                    document.getElementById('role-validation-text').innerText = `Role slots (${sum}) must exactly equal player count (${GameState.playerCount})!`;
+                }
+            },
+
+            proceedToPlayerNames: function() {
+                let sum = Object.values(GameState.selectedRolesConfig).reduce((a, b) => a + b, 0);
+                if (sum !== GameState.playerCount) return;
+
+                this.renderPlayerNameInputs();
+                this.goToStep('step-player-names');
+            },
+
+            renderPlayerNameInputs: function() {
+                const container = document.getElementById('player-names-container');
+                container.innerHTML = '';
+                
+                if (!GameState.players || GameState.players.length !== GameState.playerCount) {
+                    const sampleNames = ['Ahmed', 'Mohamed', 'Omar', 'Ali', 'Karim', 'Youssef', 'Hassan', 'Mostafa', 'Khaled', 'Mahmoud', 'Tarek', 'Ziad', 'Amr', 'Ibrahim', 'Sami', 'Bilal', 'Hamza', 'Nour', 'Ramy', 'Adel'];
+                    GameState.players = [];
+                    for (let i = 0; i < GameState.playerCount; i++) {
+                        GameState.players.push({
+                            id: 'p_' + (i + 1),
+                            name: sampleNames[i] || `Player ${i + 1}`,
+                            roleId: null,
+                            status: 'ALIVE',
+                            deathRound: null,
+                            deathCause: null
+                        });
+                    }
+                }
+
+                GameState.players.forEach((player, idx) => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center gap-3 bg-background p-2.5 rounded-xl border border-border';
+                    div.innerHTML = `
+                        <span class="w-7 text-xs font-mono text-text-secondary/70 text-right">${idx + 1}.</span>
+                        <input type="text" id="player-input-${idx}" value="${player.name}" oninput="AppController.updatePlayerName(${idx}, this.value)" placeholder="Player Name" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary font-medium">
+                    `;
+                    container.appendChild(div);
+                });
+            },
+
+            updatePlayerName: function(idx, val) {
+                if (GameState.players[idx]) {
+                    GameState.players[idx].name = val.trim();
+                }
+            },
+
+            fillDefaultNames: function() {
+                const sampleNames = ['Ahmed', 'Mohamed', 'Omar', 'Ali', 'Karim', 'Youssef', 'Hassan', 'Mostafa', 'Khaled', 'Mahmoud', 'Tarek', 'Ziad', 'Amr', 'Ibrahim'];
+                for (let i = 0; i < GameState.playerCount; i++) {
+                    GameState.players[i].name = sampleNames[i] || `Player ${i + 1}`;
+                    const input = document.getElementById(`player-input-${i}`);
+                    if (input) input.value = GameState.players[i].name;
+                }
+            },
+
+            randomizeAndReviewRoles: function() {
+                const namesSet = new Set();
+                for (let i = 0; i < GameState.playerCount; i++) {
+                    const name = GameState.players[i].name.trim();
+                    if (!name) {
+                        alert(`Player #${i + 1} name cannot be empty.`);
+                        return;
+                    }
+                    if (namesSet.has(name.toLowerCase())) {
+                        alert(`Duplicate player name detected: "${name}". All player names must be unique.`);
+                        return;
+                    }
+                    namesSet.add(name.toLowerCase());
+                }
+
+                this.executeFisherYatesRandomization();
+                this.renderAssignmentTable();
+                this.goToStep('step-role-review');
+            },
+
+            randomizeRolesOnly: function() {
+                this.executeFisherYatesRandomization();
+                this.renderAssignmentTable();
+            },
+
+            executeFisherYatesRandomization: function() {
+                let rolePool = [];
+                Object.keys(GameState.selectedRolesConfig).forEach(roleId => {
+                    const count = GameState.selectedRolesConfig[roleId];
+                    for (let c = 0; c < count; c++) {
+                        rolePool.push(roleId);
+                    }
+                });
+
+                // Fisher-Yates shuffle
+                for (let i = rolePool.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [rolePool[i], rolePool[j]] = [rolePool[j], rolePool[i]];
+                }
+
+                GameState.players.forEach((player, idx) => {
+                    player.roleId = rolePool[idx];
+                    player.status = 'ALIVE';
+                    player.deathRound = null;
+                    player.deathCause = null;
+                });
+            },
+
+            renderAssignmentTable: function() {
+                const tbody = document.getElementById('assignment-table-body');
+                tbody.innerHTML = '';
+
+                GameState.players.forEach((player, idx) => {
+                    const role = ROLE_DATABASE[player.roleId] || { name: 'Unknown', team: 'UNKNOWN', icon: 'fa-user' };
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-surface/60 transition';
+                    tr.innerHTML = `
+                        <td class="p-3.5 pl-4 font-mono text-text-secondary/70">${idx + 1}</td>
+                        <td class="p-3.5 font-bold text-text-primary">${player.name}</td>
+                        <td class="p-3.5">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${role.color}">
+                                <i class="fa-solid ${role.icon}"></i> ${role.name}
+                            </span>
+                        </td>
+                        <td class="p-3.5 font-mono text-xs text-text-secondary">${role.team}</td>
+                        <td class="p-3.5 pr-4">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-success/10 text-success border border-success/30">ALIVE</span>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            },
+
+            confirmRolesAndStartGame: function() {
+                UIModal.show(
+                    'Confirm Official Roles',
+                    'Once confirmed, role assignments are locked (1 player = 1 role) and Night 1 begins. Proceed?',
+                    'fa-shield-halved text-success bg-success/10 border-success/20',
+                    () => {
+                        GameState.status = 'RUNNING';
+                        GameState.currentRound = 1;
+                        GameState.phase = 'NIGHT';
+                        GameState.nightSequenceStep = 0;
+                        GameState.nightActions = {
+                            spyTargetId: null,
+                            mafiaTargetId: null,
+                            necroTargetId: null,
+                            assassinUseBullet: false,
+                            assassinTargetId: null,
+                            bodyguardTargetId: null,
+                            sirTargetId: null,
+                            doctorTargetId: null,
+                            townCrierMsgText: '',
+                            mazoonPlayerAId: null,
+                            mazoonPlayerBId: null
+                        };
+
+                        GameState.eventLog.unshift({
+                            round: 1,
+                            phase: 'NIGHT',
+                            text: '🌙 Night 1 has begun. Executing Night Sequence steps.',
+                            timestamp: new Date().toLocaleTimeString()
+                        });
+
+                        StorageManager.save();
+                        AppController.goToStep('step-game-dashboard');
+                        AppController.updateDashboard();
+                        
+                        document.getElementById('header-status-badge').classList.remove('hidden');
+                        document.getElementById('header-status-badge').classList.add('flex');
+                        document.getElementById('hdr-game-id').innerText = GameState.gameId;
+                        const newGameBtn = document.getElementById('btn-new-game');
+                        newGameBtn.classList.remove('hidden');
+                        newGameBtn.classList.add('flex');
+                    }
+                );
+            },
+
+            updateDashboard: function() {
+                document.getElementById('hdr-phase').innerText = GameState.phase;
+                document.getElementById('hdr-round').innerText = GameState.currentRound;
+
+                const aliveCount = GameState.players.filter(p => p.status === 'ALIVE').length;
+                const deadCount = GameState.players.filter(p => p.status === 'DEAD').length;
+                document.getElementById('stat-alive-count').innerText = aliveCount;
+                document.getElementById('stat-dead-count').innerText = deadCount;
+
+                this.renderDashboardPlayers();
+                this.renderSpecialAbilitiesStatus();
+                this.renderPhaseWizard();
+                this.renderEventLog();
+                StorageManager.save();
+            },
+
+            renderDashboardPlayers: function() {
+                const container = document.getElementById('dashboard-players-grid');
+                container.innerHTML = '';
+
+                // Check if Boss is dead and Underboss is active
+                const bossPlayer = GameState.players.find(p => p.roleId === 'boss');
+                const isBossDead = !bossPlayer || bossPlayer.status === 'DEAD';
+
+                GameState.players.forEach((player, idx) => {
+                    const role = ROLE_DATABASE[player.roleId] || { name: 'Unknown', team: 'UNKNOWN', icon: 'fa-user' };
+                    const isAlive = player.status === 'ALIVE';
+
+                    // Check if Underboss is active mafia leader
+                    let roleBadgeText = role.name;
+                    if (player.roleId === 'underboss' && isBossDead) {
+                        roleBadgeText = 'Underboss (Active Mafia Leader)';
+                    }
+
+                    // Marriage status
+                    let marriageTag = '';
+                    if (GameState.marriage.active && (GameState.marriage.playerAId === player.id || GameState.marriage.playerBId === player.id)) {
+                        marriageTag = `<span class="text-[10px] font-mono bg-primary/10 text-primary border border-primary/30 px-1.5 py-0.5 rounded"><i class="fa-solid fa-ring"></i> Married</span>`;
+                    }
+
+                    // Bodyguard protected tag
+                    let bgTag = '';
+                    if (GameState.bodyguardPermanentTargetId === player.id) {
+                        bgTag = `<span class="text-[10px] font-mono bg-success/10 text-success border border-success/30 px-1.5 py-0.5 rounded"><i class="fa-solid fa-shield"></i> Bodyguard Protected</span>`;
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = `bg-background border ${isAlive ? 'border-border' : 'border-danger/40 bg-danger/10'} rounded-xl p-4 flex items-center justify-between transition`;
+                    card.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-surface border border-border flex items-center justify-center font-mono text-xs text-text-secondary font-bold">
+                                #${idx + 1}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-text-primary text-sm flex items-center gap-2 flex-wrap">
+                                    ${player.name}
+                                    ${!isAlive ? `<span class="text-[10px] font-mono bg-danger/10 text-danger border border-danger/40 px-1.5 py-0.5 rounded">${player.deathCause || 'DEAD'} (R${player.deathRound})</span>` : ''}
+                                    ${marriageTag}
+                                    ${bgTag}
+                                </h4>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border ${role.color}">
+                                        <i class="fa-solid ${role.icon}"></i> ${roleBadgeText}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="px-2.5 py-1 rounded-full text-xs font-mono font-bold ${isAlive ? 'bg-success/10 text-success border border-success/30' : 'bg-danger/10 text-danger border border-danger/40'}">
+                                ${player.status}
+                            </span>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            },
+
+            renderSpecialAbilitiesStatus: function() {
+                const list = document.getElementById('special-abilities-status-list');
+                const state = GameState.specialAbilityState;
+
+                list.innerHTML = `
+                    <div class="flex justify-between items-center bg-background p-2 rounded border border-border">
+                        <span class="text-text-secondary">Necro Revival:</span>
+                        <span class="${state.necroUsed ? 'text-danger font-bold' : 'text-success font-bold'}">${state.necroUsed ? 'USED' : 'AVAILABLE'}</span>
+                    </div>
+                    <div class="flex justify-between items-center bg-background p-2 rounded border border-border">
+                        <span class="text-text-secondary">Assassin Bullet:</span>
+                        <span class="${state.assassinBulletUsed ? 'text-danger font-bold' : 'text-success font-bold'}">${state.assassinBulletUsed ? 'USED' : 'AVAILABLE'}</span>
+                    </div>
+                    <div class="flex justify-between items-center bg-background p-2 rounded border border-border">
+                        <span class="text-text-secondary">Hunter Bullet:</span>
+                        <span class="${state.hunterBulletUsed ? 'text-danger font-bold' : 'text-success font-bold'}">${state.hunterBulletUsed ? 'USED' : 'AVAILABLE'}</span>
+                    </div>
+                    <div class="flex justify-between items-center bg-background p-2 rounded border border-border">
+                        <span class="text-text-secondary">Bodyguard Prot.:</span>
+                        <span class="${state.bodyguardProtectionUsed ? 'text-danger font-bold' : 'text-success font-bold'}">${state.bodyguardProtectionUsed ? 'LOCKED' : 'AVAILABLE'}</span>
+                    </div>
+                    <div class="flex justify-between items-center bg-background p-2 rounded border border-border">
+                        <span class="text-text-secondary">Mazoon Marriage:</span>
+                        <span class="${state.mazoonMarriageUsed ? 'text-danger font-bold' : 'text-success font-bold'}">${state.mazoonMarriageUsed ? 'COMPLETED' : 'AVAILABLE'}</span>
+                    </div>
+                `;
+            },
+
+            renderPhaseWizard: function() {
+                const wizardContainer = document.getElementById('phase-wizard-container');
+                const phaseTitle = document.getElementById('dashboard-phase-title');
+                const iconBox = document.getElementById('phase-icon-box');
+                const headerActionBtn = document.getElementById('phase-header-action-btn');
+
+                if (GameState.phase === 'NIGHT') {
+                    iconBox.className = 'w-12 h-12 rounded-2xl bg-surface border border-primary/30 flex items-center justify-center text-primary text-xl shadow-inner';
+                    iconBox.innerHTML = '<i class="fa-solid fa-moon"></i>';
+                    phaseTitle.innerHTML = `NIGHT ${GameState.currentRound} <span class="text-xs bg-primary/15 text-primary/80 border border-primary/30 px-2 py-0.5 rounded-full font-sans font-semibold">Night Sequence Wizard</span>`;
+                    
+                    headerActionBtn.innerHTML = `
+                        <button onclick="NightResolutionEngine.skipOrNextStep()" class="bg-primary/15 hover:bg-primary/25 text-primary/70 border border-primary/30 text-xs font-semibold px-3.5 py-2 rounded-xl transition flex items-center gap-2">
+                            <span>Next Step</span> <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    `;
+
+                    wizardContainer.innerHTML = NightSequenceManager.renderCurrentStepHtml();
+                } else if (GameState.phase === 'DAY') {
+                    iconBox.className = 'w-12 h-12 rounded-2xl bg-warning/10 border border-warning/30 flex items-center justify-center text-warning text-xl shadow-inner';
+                    iconBox.innerHTML = '<i class="fa-solid fa-sun"></i>';
+                    phaseTitle.innerHTML = `DAY ${GameState.currentRound} <span class="text-xs bg-warning/15 text-warning border border-warning/40 px-2 py-0.5 rounded-full font-sans font-semibold">Discussion & Voting Phase</span>`;
+                    
+                    headerActionBtn.innerHTML = '';
+                    wizardContainer.innerHTML = VotingEngine.renderVotingInterface();
+                } else if (GameState.phase === 'HUNTER_SHOT') {
+                    iconBox.className = 'w-12 h-12 rounded-2xl bg-surface border border-primary/30 flex items-center justify-center text-primary text-xl shadow-inner';
+                    iconBox.innerHTML = '<i class="fa-solid fa-crosshairs"></i>';
+                    phaseTitle.innerHTML = `HUNTER'S LAST SHOT <span class="text-xs bg-primary/15 text-primary/80 border border-primary/30 px-2 py-0.5 rounded-full font-sans font-semibold">Mandatory Retaliation</span>`;
+
+                    headerActionBtn.innerHTML = '';
+                    wizardContainer.innerHTML = VotingEngine.renderHunterShotInterface();
+                }
+            },
+
+            renderEventLog: function() {
+                const logContainer = document.getElementById('game-event-log');
+                logContainer.innerHTML = '';
+
+                GameState.eventLog.forEach(log => {
+                    const div = document.createElement('div');
+                    div.className = 'p-2.5 rounded-lg bg-surface border border-border/80 text-xs text-text-secondary flex flex-col gap-1';
+                    div.innerHTML = `
+                        <div class="flex items-center justify-between text-[10px] text-text-secondary/70">
+                            <span class="font-bold text-text-secondary">Round ${log.round} • ${log.phase}</span>
+                            <span>${log.timestamp}</span>
+                        </div>
+                        <div class="leading-relaxed font-sans font-medium text-text-primary">${log.text}</div>
+                    `;
+                    logContainer.appendChild(div);
+                });
+            }
+        };
+
+        /**
+         * 5. CONFIGURABLE NIGHT SEQUENCE MANAGER (Steps 0 to 7)
+         */
+        const NightSequenceManager = {
+            steps: [
+                { id: 'spy', name: 'Step 1: SPY Investigation', roleReq: 'spy' },
+                { id: 'mafia', name: 'Step 2: Mafia / Underboss Kill', roleReq: 'mafia_active' },
+                { id: 'necro', name: 'Step 3: Necro Revival', roleReq: 'necro' },
+                { id: 'assassin', name: 'Step 4: Assassin Bullet', roleReq: 'assassin' },
+                { id: 'bodyguard', name: 'Step 5: Bodyguard Protection', roleReq: 'bodyguard' },
+                { id: 'town_crier', name: 'Step 6: Town Crier Message', roleReq: 'town_crier' },
+                { id: 'mazoon', name: 'Step 7: Mazoon Marriage (Night 1 Only)', roleReq: 'mazoon' },
+                { id: 'sir_doc', name: 'Step 8: Sir Investigation & Doctor Protection', roleReq: 'sir_or_doctor' },
+                { id: 'resolve', name: 'Step 9: Resolve Night', roleReq: 'all' }
+            ],
+
+            renderCurrentStepHtml: function() {
+                const stepIdx = GameState.nightSequenceStep;
+                if (stepIdx >= this.steps.length) {
+                    GameState.nightSequenceStep = this.steps.length - 1;
+                }
+                const currentStep = this.steps[GameState.nightSequenceStep];
+                const alivePlayers = GameState.players.filter(p => p.status === 'ALIVE');
+
+                let stepContentHtml = '';
+
+                switch(currentStep.id) {
+                    case 'spy':
+                        const spyAlive = alivePlayers.some(p => p.roleId === 'spy');
+                        if (!spyAlive) {
+                            stepContentHtml = `<div class="text-xs text-text-secondary italic py-4">SPY is eliminated. Skipping step automatically.</div>`;
+                        } else {
+                            const validTargets = alivePlayers.filter(p => p.roleId !== 'boss' && p.roleId !== 'underboss');
+                            const selectedId = GameState.nightActions.spyTargetId || '';
+                            stepContentHtml = `
+                                <div class="space-y-3">
+                                    <div class="flex items-center gap-2 text-primary font-bold text-sm"><i class="fa-solid fa-eye"></i> SPY Investigation (Wakes with Mafia)</div>
+                                    <p class="text-xs text-text-secondary">Select any player except Boss or Underboss to inspect their exact role:</p>
+                                    <div class="flex gap-3 items-center">
+                                        <select id="input-spy-target" class="bg-surface border border-border text-sm text-text-primary rounded-lg px-3 py-2 flex-1 focus:outline-none focus:border-primary font-medium">
+                                            <option value="">-- Select Target for SPY --</option>
+                                            ${validTargets.map(p => `<option value="${p.id}" ${p.id === selectedId ? 'selected' : ''}>${p.name}</option>`).join('')}
+                                        </select>
+                                        <button onclick="NightSequenceManager.saveSpyAction()" class="bg-primary hover:bg-primary-hover text-secondary font-bold text-xs px-4 py-2.5 rounded-lg transition">Save Action</button>
+                                    </div>
+                                    ${GameState.nightActions.spyTargetId ? `<div class="p-2.5 bg-primary/10 border border-primary/30 text-primary/80 text-xs rounded-lg"><strong>Result:</strong> Target's role is <span class="text-text-primary font-bold">${ROLE_DATABASE[GameState.players.find(p=>p.id===GameState.nightActions.spyTargetId)?.roleId]?.name}</span></div>` : ''}
+                                </div>
+                            `;
+                        }
+                        break;
+
+                    case 'mafia':
+                        // Boss alive or Underboss takes over
+                        const bossAlive = alivePlayers.some(p => p.roleId === 'boss');
+                        const underbossAlive = alivePlayers.some(p => p.roleId === 'underboss');
+                        const mafiaLeaderTitle = bossAlive ? 'BOSS' : (underbossAlive ? 'UNDERBOSS (Active Mafia Leader)' : 'MAFIA ELIMINATED');
+                        
+                        if (!bossAlive && !underbossAlive) {
+                            stepContentHtml = `<div class="text-xs text-text-secondary italic py-4">Both Boss and Underboss are eliminated. No Mafia attack possible.</div>`;
+                        } else {
+                            // Mafia leader can ONLY target non-Mafia players.
+                            // Boss/Underboss/Spy cannot kill themselves or any of the other Mafia leadership/Spy roles.
+                            const validMafiaTargets = alivePlayers.filter(p =>
+                                p.roleId !== 'boss' && p.roleId !== 'underboss' && p.roleId !== 'spy'
+                            );
+                            const selectedTarget = validMafiaTargets.some(p => p.id === GameState.nightActions.mafiaTargetId)
+                                ? GameState.nightActions.mafiaTargetId
+                                : '';
+                            stepContentHtml = `
+                                <div class="space-y-3">
+                                    <div class="flex items-center gap-2 text-primary font-bold text-sm"><i class="fa-solid fa-skull-crossbones"></i> ${mafiaLeaderTitle} — Choose Target to Kill</div>
+                                    <p class="text-xs text-text-secondary">Mafia can target living non-Mafia players only. Boss, Underboss, and SPY cannot be targeted by the Mafia attack.</p>
+                                    <div class="flex gap-3 items-center">
+                                        <select id="input-mafia-target" class="bg-surface border border-border text-sm text-text-primary rounded-lg px-3 py-2 flex-1 focus:outline-none focus:border-primary font-medium">
+                                            <option value="">-- Select Mafia Target --</option>
+                                            ${validMafiaTargets.map(p => `<option value="${p.id}" ${p.id === selectedTarget ? 'selected' : ''}>${p.name} (${ROLE_DATABASE[p.roleId].name})</option>`).join('')}
+                                        </select>
+                                        <button onclick="NightSequenceManager.saveMafiaAction()" class="bg-primary hover:bg-primary-hover text-secondary font-bold text-xs px-4 py-2.5 rounded-lg transition">Save Action</button>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        break;
+
+                    case 'necro':
+                        const necroAlive = alivePlayers.some(p => p.roleId === 'necro');
+                        const deadPlayers = GameState.players.filter(p => p.status === 'DEAD');
+                        if (!necroAlive || GameState.specialAbilityState.necroUsed || deadPlayers.length === 0) {
+                            stepContentHtml = `<div class="text-xs text-text-secondary italic py-4">Necro unavailable, already used, or no dead players to revive.</div>`;
+                        } else {
+                            const selectedNecro = GameState.nightActions.necroTargetId || '';
+                            stepContentHtml = `
+                                <div class="space-y-3">
+                                    <div class="flex items-center gap-2 text-primary font-bold text-sm"><i class="fa-solid fa-ghost"></i> NECRO — Choose Dead Player to Revive</div>
+                                    <p class="text-xs text-text-secondary">Revived player returns with their exact original role:</p>
+                                    <div class="flex gap-3 items-center">
+                                        <select id="input-necro-target" class="bg-surface border border-border text-sm text-text-primary rounded-lg px-3 py-2 flex-1 focus:outline-none focus:border-primary font-medium">
+                                            <option value="">-- Select Dead Player --</option>
+                                            ${deadPlayers.map(p => `<option value="${p.id}" ${p.id === selectedNecro ? 'selected' : ''}>${p.name} (${ROLE_DATABASE[p.roleId].name} - Dead Round ${p.deathRound})</option>`).join('')}
+                                        </select>
+                                        <button onclick="NightSequenceManager.saveNecroAction()" class="bg-primary hover:bg-primary-hover text-secondary font-bold text-xs px-4 py-2.5 rounded-lg transition">Save Action</button>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        break;
+
+                    case 'assassin':
+                        const assassinAlive = alivePlayers.some(p => p.roleId === 'assassin');
+                        if (!assassinAlive || GameState.specialAbilityState.assassinBulletUsed) {
+                            stepContentHtml = `<div class="text-xs text-text-secondary italic py-4">Assassin eliminated or bullet already used.</div>`;
+                        } else {
+                            stepContentHtml = `
+                                <div class="space-y-3">
+                                    <div class="flex items-center gap-2 text-warning font-bold text-sm"><i class="fa-solid fa-crosshairs"></i> ASSASSIN — Use Bullet?</div>
+                                    <p class="text-xs text-text-secondary">Assassin has 1 bullet for the entire game to kill any player (no role restrictions):</p>
+                                    <div class="flex gap-3 items-center">
+                                        <select id="input-assassin-use" onchange="document.getElementById('assassin-target-box').style.display = this.value === 'YES' ? 'block' : 'none'" class="bg-surface border border-border text-sm text-text-primary rounded-lg px-3 py-2 w-40 font-medium">
+                                            <option value="NO" ${!GameState.nightActions.assassinUseBullet ? 'selected' : ''}>NO</option>
+                                            <option value="YES" ${GameState.nightActions.assassinUseBullet ? 'selected' : ''}>YES (Shoot)</option>
+                                        </select>
+                                    </div>
+                                    <div id="assassin-target-box" style="display: ${GameState.nightActions.assassinUseBullet ? 'block' : 'none'};" class="mt-3">
+                                        <label class="block text-xs text-text-secondary mb-1">Select Assassin Target:</label>
+                                        <select id="input-assassin-target" class="bg-surface border border-border text-sm text-text-primary rounded-lg px-3 py-2 w-full font-medium">
+                                            <option value="">-- Select Target --</option>
+                                            ${alivePlayers.map(p => `<option value="${p.id}" ${GameState.nightActions.assassinTargetId === p.id ? 'selected' : ''}>${p.name} (${ROLE_DATABASE[p.roleId].name})</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    <button onclick="NightSequenceManager.saveAssassinAction()" class="bg-warning hover:bg-warning/90 text-secondary font-bold text-xs px-4 py-2.5 rounded-lg transition mt-2">Save Assassin Choice</button>
+                                </div>
+                            `;
+                        }
+                        break;
+
+                    case 'bodyguard':
+                        const bgAlive = alivePlayers.some(p => p.roleId === 'bodyguard');
+                        if (!bgAlive || GameState.specialAbilityState.bodyguardProtectionUsed) {
+                            stepContentHtml = `<div class="text-xs text-text-secondary italic py-4">Bodyguard eliminated or permanent protection already locked.</div>`;
+                        } else {
+                            stepContentHtml = `
+                                <div class="space-y-3">
+                                    <div class="flex items-center gap-2 text-success font-bold text-sm"><i class="fa-solid fa-shield"></i> BODYGUARD — Choose Permanent Protection Target</div>
+                                    <p class="text-xs text-text-secondary">Locks permanently for the rest of the game. Bodyguard sacrifices self if protected player is targeted by Mafia:</p>
+                                    <div class="flex gap-3 items-center">
+                                        <select id="input-bg-target" class="bg-surface border border-border text-sm text-text-primary rounded-lg px-3 py-2 flex-1 font-medium">
+                                            <option value="">-- Select Player to Protect --</option>
+                                            ${alivePlayers.map(p => `<option value="${p.id}" ${GameState.bodyguardPermanentTargetId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                                        </select>
+                                        <button onclick="NightSequenceManager.saveBodyguardAction()" class="bg-success hover:bg-success/90 text-secondary font-bold text-xs px-4 py-2.5 rounded-lg transition">Lock Protection</button>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        break;
+
+                    case 'town_crier':
+                        const tcAlive = alivePlayers.some(p => p.roleId === 'town_crier');
+                        if (!tcAlive) {
+                            stepContentHtml = `<div class="text-xs text-text-secondary italic py-4">Town Crier is eliminated.</div>`;
+                        } else {
+                            stepContentHtml = `
+                                <div class="space-y-3">
+                                    <div class="flex items-center gap-2 text-primary font-bold text-sm"><i class="fa-solid fa-bullhorn"></i> TOWN CRIER — Send Anonymous Message</div>
+                                    <p class="text-xs text-text-secondary">Message will be read aloud to the city tomorrow morning without revealing the Town Crier's identity:</p>
+                                    <div class="flex flex-col gap-2">
+                                        <textarea id="input-tc-msg" rows="2" placeholder="e.g. Someone in the city is lying..." class="bg-surface border border-border text-sm text-text-primary rounded-lg p-3 focus:outline-none focus:border-primary">${GameState.nightActions.townCrierMsgText || ''}</textarea>
+                                        <button onclick="NightSequenceManager.saveTownCrierAction()" class="bg-primary hover:bg-primary-hover text-secondary font-bold text-xs px-4 py-2.5 rounded-lg transition self-end">Save Anonymous Message</button>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        break;
+
+                    case 'mazoon':
+                        const mazoonAlive = alivePlayers.some(p => p.roleId === 'mazoon');
+                        if (!mazoonAlive || GameState.currentRound > 1 || GameState.specialAbilityState.mazoonMarriageUsed) {
+                            stepContentHtml = `<div class="text-xs text-text-secondary italic py-4">Mazoon marriage action is available on Night 1 only.</div>`;
+                        } else {
+                            stepContentHtml = `
+                                <div class="space-y-3">
+                                    <div class="flex items-center gap-2 text-success font-bold text-sm"><i class="fa-solid fa-ring"></i> MAZOON — Night 1 Marriage (Choose 2 Players)</div>
+                                    <p class="text-xs text-text-secondary">If either married player dies, the other also dies unless original death was prevented by Doctor:</p>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <select id="input-mazoon-a" class="bg-surface border border-border text-sm text-text-primary rounded-lg px-3 py-2 font-medium">
+                                            <option value="">-- Player A --</option>
+                                            ${alivePlayers.map(p => `<option value="${p.id}" ${GameState.nightActions.mazoonPlayerAId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                                        </select>
+                                        <select id="input-mazoon-b" class="bg-surface border border-border text-sm text-text-primary rounded-lg px-3 py-2 font-medium">
+                                            <option value="">-- Player B --</option>
+                                            ${alivePlayers.map(p => `<option value="${p.id}" ${GameState.nightActions.mazoonPlayerBId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    <button onclick="NightSequenceManager.saveMazoonAction()" class="bg-success hover:bg-success/90 text-secondary font-bold text-xs px-4 py-2.5 rounded-lg transition">Confirm Marriage</button>
+                                </div>
+                            `;
+                        }
+                        break;
+
+                    case 'sir_doc':
+                        const sirAlive = alivePlayers.some(p => p.roleId === 'sir');
+                        const docAlive = alivePlayers.some(p => p.roleId === 'doctor');
+                        stepContentHtml = `
+                            <div class="space-y-4">
+                                <div class="flex items-center gap-2 text-primary font-bold text-sm"><i class="fa-solid fa-magnifying-glass"></i> SIR (Investigator) & DOCTOR (Protector)</div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="bg-surface p-3 rounded-xl border border-border">
+                                        <label class="block text-xs font-bold text-primary/80 mb-1">Sir Investigation Target:</label>
+                                        <select id="input-sir-target" class="bg-background border border-border text-xs text-text-primary rounded-lg px-3 py-2 w-full font-medium mb-2">
+                                            <option value="">-- Select Target --</option>
+                                            ${alivePlayers.map(p => `<option value="${p.id}" ${GameState.nightActions.sirTargetId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                                        </select>
+                                        <button onclick="NightSequenceManager.saveSirAction()" class="bg-primary hover:bg-primary-hover text-secondary font-bold text-xs px-3 py-2 rounded-lg w-full transition">Save Sir Investigation</button>
+                                        ${GameState.nightActions.sirTargetId ? `<div class="mt-2 p-2 bg-surface/60 rounded text-xs text-primary/70"><strong>Sir Result:</strong> <span class="font-bold uppercase text-text-primary">${AlignmentEngine.getSirAlignment(GameState.nightActions.sirTargetId)}</span></div>` : ''}
+                                    </div>
+                                    <div class="bg-surface p-3 rounded-xl border border-border">
+                                        <label class="block text-xs font-bold text-success mb-1">Doctor Protection Target:</label>
+                                        <select id="input-doc-target" class="bg-background border border-border text-xs text-text-primary rounded-lg px-3 py-2 w-full font-medium mb-2">
+                                            <option value="">-- Select Save Target --</option>
+                                            ${alivePlayers.map(p => `<option value="${p.id}" ${GameState.nightActions.doctorTargetId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                                        </select>
+                                        <button onclick="NightSequenceManager.saveDoctorAction()" class="bg-success hover:bg-success/90 text-secondary font-bold text-xs px-3 py-2 rounded-lg w-full transition">Save Doctor Protection</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        break;
+
+                    case 'resolve':
+                        stepContentHtml = `
+                            <div class="text-center py-6 space-y-4">
+                                <div class="inline-flex p-3 bg-success/10 border border-success/20 text-success rounded-full text-2xl">
+                                    <i class="fa-solid fa-bolt"></i>
+                                </div>
+                                <h4 class="text-lg font-bold text-text-primary">All Night Actions Recorded</h4>
+                                <p class="text-xs text-text-secondary max-w-md mx-auto">Click below to run the Central Death & Night Resolution Engine. Actions are evaluated simultaneously with all role immunities and protections applied.</p>
+                                <button onclick="NightResolutionEngine.resolveNight()" class="bg-success hover:bg-success/90 text-secondary font-bold py-3.5 px-8 rounded-xl shadow-md transition flex items-center gap-2 mx-auto text-sm uppercase tracking-wider">
+                                    <i class="fa-solid fa-shield-halved"></i> Resolve Night ${GameState.currentRound} Now
+                                </button>
+                            </div>
+                        `;
+                        break;
+                }
+
+                return `
+                    <div class="flex flex-col gap-4">
+                        <div class="flex items-center justify-between text-xs font-mono text-text-secondary pb-2 border-b border-border">
+                            <span>Step ${stepIdx + 1} of ${this.steps.length}: <strong class="text-text-primary">${currentStep.name}</strong></span>
+                            <div class="flex gap-2">
+                                ${stepIdx > 0 ? `<button onclick="NightSequenceManager.prevStep()" class="px-2.5 py-1 bg-surface hover:bg-card text-text-secondary rounded border border-border">Prev</button>` : ''}
+                                ${stepIdx < this.steps.length - 1 ? `<button onclick="NightSequenceManager.nextStep()" class="px-2.5 py-1 bg-primary/15 hover:bg-primary/25 text-primary/70 rounded border border-primary/30">Next</button>` : ''}
+                            </div>
+                        </div>
+                        ${stepContentHtml}
+                    </div>
+                `;
+            },
+
+            nextStep: function() {
+                if (GameState.nightSequenceStep < this.steps.length - 1) {
+                    GameState.nightSequenceStep++;
+                    AppController.updateDashboard();
+                }
+            },
+
+            prevStep: function() {
+                if (GameState.nightSequenceStep > 0) {
+                    GameState.nightSequenceStep--;
+                    AppController.updateDashboard();
+                }
+            },
+
+            skipOrNextStep: function() {
+                this.nextStep();
+            },
+
+            saveSpyAction: function() {
+                const val = document.getElementById('input-spy-target').value;
+                GameState.nightActions.spyTargetId = val;
+                alert('SPY action recorded.');
+                AppController.updateDashboard();
+            },
+
+            saveMafiaAction: function() {
+                const val = document.getElementById('input-mafia-target').value;
+                if (!val) {
+                    alert('Please select a Mafia attack target.');
+                    return;
+                }
+
+                const target = GameState.players.find(p => p.id === val);
+                if (!target || target.status !== 'ALIVE') {
+                    alert('Invalid Mafia target.');
+                    return;
+                }
+
+                // Hard rule: Mafia can never target Boss, Underboss, or SPY.
+                if (['boss', 'underboss', 'spy'].includes(target.roleId)) {
+                    alert('Boss, Underboss, and SPY cannot be targeted by the Mafia attack.');
+                    return;
+                }
+
+                GameState.nightActions.mafiaTargetId = val;
+                alert('Mafia attack target recorded.');
+                AppController.updateDashboard();
+            },
+
+            saveNecroAction: function() {
+                const val = document.getElementById('input-necro-target').value;
+                GameState.nightActions.necroTargetId = val;
+                alert('Necro revival target recorded.');
+                AppController.updateDashboard();
+            },
+
+            saveAssassinAction: function() {
+                const use = document.getElementById('input-assassin-use').value === 'YES';
+                GameState.nightActions.assassinUseBullet = use;
+                if (use) {
+                    GameState.nightActions.assassinTargetId = document.getElementById('input-assassin-target').value;
+                } else {
+                    GameState.nightActions.assassinTargetId = null;
+                }
+                alert('Assassin action recorded.');
+                AppController.updateDashboard();
+            },
+
+            saveBodyguardAction: function() {
+                const val = document.getElementById('input-bg-target').value;
+                if (val) {
+                    GameState.bodyguardPermanentTargetId = val;
+                    GameState.specialAbilityState.bodyguardProtectionUsed = true;
+                    alert('Bodyguard permanent protection locked!');
+                    AppController.updateDashboard();
+                }
+            },
+
+            saveTownCrierAction: function() {
+                const val = document.getElementById('input-tc-msg').value.trim();
+                GameState.nightActions.townCrierMsgText = val;
+                if (val) {
+                    GameState.townCrierMessages[GameState.currentRound] = val;
+                }
+                alert('Town Crier message recorded.');
+                AppController.updateDashboard();
+            },
+
+            saveMazoonAction: function() {
+                const a = document.getElementById('input-mazoon-a').value;
+                const b = document.getElementById('input-mazoon-b').value;
+                if (!a || !b || a === b) {
+                    alert('Please select two distinct alive players for the marriage.');
+                    return;
+                }
+                GameState.marriage = { active: true, playerAId: a, playerBId: b };
+                GameState.specialAbilityState.mazoonMarriageUsed = true;
+                alert('Mazoon marriage successfully established!');
+                AppController.updateDashboard();
+            },
+
+            saveSirAction: function() {
+                GameState.nightActions.sirTargetId = document.getElementById('input-sir-target').value;
+                alert('Sir investigation recorded.');
+                AppController.updateDashboard();
+            },
+
+            saveDoctorAction: function() {
+                GameState.nightActions.doctorTargetId = document.getElementById('input-doc-target').value;
+                alert('Doctor protection recorded.');
+                AppController.updateDashboard();
+            }
+        };
+
+        /**
+         * 6. ALIGNMENT ENGINE (Sir investigation and team rules)
+         */
+        const AlignmentEngine = {
+            getSirAlignment: function(playerId) {
+                const player = GameState.players.find(p => p.id === playerId);
+                if (!player) return 'UNKNOWN';
+                
+                // Sir investigation rule:
+                // BAD: Boss, Underboss, SPY
+                // GOOD: Everyone else (including King, Princess, Necro, Assassin, Doctor, etc.)
+                const roleId = player.roleId;
+                if (roleId === 'boss' || roleId === 'underboss' || roleId === 'spy') {
+                    return 'BAD';
+                }
+                return 'GOOD';
+            }
+        };
+
+        /**
+         * 7. CENTRAL DEATH RESOLUTION & NIGHT RESOLUTION ENGINE
+         */
+        const DeathResolutionEngine = {
+            resolveDeath: function(targetPlayer, cause, round) {
+                if (!targetPlayer || targetPlayer.status === 'DEAD') return false;
+
+                targetPlayer.status = 'DEAD';
+                targetPlayer.deathRound = round;
+                targetPlayer.deathCause = cause;
+
+                // Handle Boss death transition
+                if (targetPlayer.roleId === 'boss') {
+                    // Underboss becomes active mafia leader
+                    const underbossPlayer = GameState.players.find(p => p.roleId === 'underboss' && p.status === 'ALIVE');
+                    if (underbossPlayer) {
+                        GameState.eventLog.unshift({
+                            round: round,
+                            phase: 'TRANSITION',
+                            text: `⚡ Boss (${targetPlayer.name}) died! Underboss (${underbossPlayer.name}) has taken over as the active Mafia leader.`,
+                            timestamp: new Date().toLocaleTimeString()
+                        });
+                    }
+                }
+
+                // Handle Marriage death chain
+                if (GameState.marriage.active) {
+                    let spouseId = null;
+                    if (GameState.marriage.playerAId === targetPlayer.id) spouseId = GameState.marriage.playerBId;
+                    if (GameState.marriage.playerBId === targetPlayer.id) spouseId = GameState.marriage.playerAId;
+
+                    if (spouseId) {
+                        const spousePlayer = GameState.players.find(p => p.id === spouseId);
+                        if (spousePlayer && spousePlayer.status === 'ALIVE') {
+                            GameState.eventLog.unshift({
+                                round: round,
+                                phase: 'MARRIAGE EFFECT',
+                                text: `💍 ${targetPlayer.name} died, causing married spouse ${spousePlayer.name} to die of heartbreak.`,
+                                timestamp: new Date().toLocaleTimeString()
+                            });
+                            spousePlayer.status = 'DEAD';
+                            spousePlayer.deathRound = round;
+                            spousePlayer.deathCause = 'MARRIAGE';
+                            
+                            // Check spouse role transition if boss
+                            if (spousePlayer.roleId === 'boss') {
+                                const ub = GameState.players.find(p => p.roleId === 'underboss' && p.status === 'ALIVE');
+                                if (ub) {
+                                    GameState.eventLog.unshift({
+                                        round: round,
+                                        phase: 'TRANSITION',
+                                        text: `⚡ Boss (${spousePlayer.name}) died via marriage! Underboss (${ub.name}) is now active Mafia leader.`,
+                                        timestamp: new Date().toLocaleTimeString()
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Handle Hunter last shot trigger
+                if (targetPlayer.roleId === 'hunter' && !GameState.specialAbilityState.hunterBulletUsed) {
+                    GameState.specialAbilityState.hunterBulletUsed = true;
+                    GameState.pendingHunterPlayer = targetPlayer;
+                }
+
+                return true;
+            }
+        };
+
+        const NightResolutionEngine = {
+            resolveNight: function() {
+                UIModal.show(
+                    `Resolve Night ${GameState.currentRound}`,
+                    'Are you sure you want to process all night actions, protections, and casualties?',
+                    'fa-bolt text-primary bg-primary/10 border-primary/20',
+                    () => {
+                        this.executeNightResolutionLogic();
+                    }
+                );
+            },
+
+            executeNightResolutionLogic: function() {
+                let roundLogs = [];
+                const round = GameState.currentRound;
+
+                // 1. Necro Revival
+                if (GameState.nightActions.necroTargetId && !GameState.specialAbilityState.necroUsed) {
+                    const deadTarget = GameState.players.find(p => p.id === GameState.nightActions.necroTargetId);
+                    if (deadTarget && deadTarget.status === 'DEAD') {
+                        deadTarget.status = 'ALIVE';
+                        deadTarget.deathRound = null;
+                        deadTarget.deathCause = null;
+                        GameState.specialAbilityState.necroUsed = true;
+                        roundLogs.push(`👻 Necro successfully revived ${deadTarget.name} (${ROLE_DATABASE[deadTarget.roleId].name}).`);
+                    }
+                }
+
+                // 2. Assassin Shot
+                let assassinVictim = null;
+                if (GameState.nightActions.assassinUseBullet && !GameState.specialAbilityState.assassinBulletUsed && GameState.nightActions.assassinTargetId) {
+                    const assassinPlayer = GameState.players.find(p => p.roleId === 'assassin' && p.status === 'ALIVE');
+                    if (assassinPlayer) {
+                        GameState.specialAbilityState.assassinBulletUsed = true;
+                        const target = GameState.players.find(p => p.id === GameState.nightActions.assassinTargetId);
+                        if (target && target.status === 'ALIVE') {
+                            assassinVictim = target;
+                            DeathResolutionEngine.resolveDeath(target, 'ASSASSIN', round);
+                            roundLogs.push(`🎯 Assassin fired a bullet and killed ${target.name} (${ROLE_DATABASE[target.roleId].name}).`);
+                        }
+                    }
+                }
+
+                // 3. Mafia Attack & Doctor Save & Bodyguard Sacrifice
+                let mafiaTargetId = GameState.nightActions.mafiaTargetId;
+                let doctorTargetId = GameState.nightActions.doctorTargetId;
+                
+                if (mafiaTargetId) {
+                    const targetPlayer = GameState.players.find(p => p.id === mafiaTargetId);
+                    const doctorPlayer = GameState.players.find(p => p.roleId === 'doctor' && p.status === 'ALIVE');
+                    const bodyguardPlayer = GameState.players.find(p => p.roleId === 'bodyguard' && p.status === 'ALIVE');
+
+                    if (targetPlayer && targetPlayer.status === 'ALIVE') {
+                        // Rule 9: King cannot be killed by Mafia
+                        if (targetPlayer.roleId === 'king') {
+                            roundLogs.push(`👑 Mafia targeted The King (${targetPlayer.name}), but the King is immune to Mafia kills!`);
+                        } 
+                        // Rule 25: Doctor save
+                        else if (doctorTargetId === mafiaTargetId) {
+                            roundLogs.push(`🩺 Doctor successfully protected ${targetPlayer.name} from the Mafia attack.`);
+                        } 
+                        // Rule 12: Bodyguard sacrifice
+                        else if (GameState.bodyguardPermanentTargetId === mafiaTargetId && bodyguardPlayer && bodyguardPlayer.status === 'ALIVE') {
+                            DeathResolutionEngine.resolveDeath(bodyguardPlayer, 'MAFIA', round);
+                            roundLogs.push(`🛡️ Mafia targeted ${targetPlayer.name}. Bodyguard (${bodyguardPlayer.name}) sacrificed himself to protect him! Bodyguard died, ${targetPlayer.name} survived.`);
+                        } 
+                        // Normal kill
+                        else {
+                            DeathResolutionEngine.resolveDeath(targetPlayer, 'MAFIA', round);
+                            roundLogs.push(`💀 Mafia successfully attacked and killed ${targetPlayer.name} (${ROLE_DATABASE[targetPlayer.roleId].name}).`);
+                        }
+                    }
+                } else {
+                    roundLogs.push(`🛡️ No Mafia attack occurred tonight.`);
+                }
+
+                // SPY and Sir investigations results logging
+                if (GameState.nightActions.spyTargetId) {
+                    const spyTarget = GameState.players.find(p => p.id === GameState.nightActions.spyTargetId);
+                    if (spyTarget) {
+                        roundLogs.push(`👁️ SPY inspected ${spyTarget.name} → Role: ${ROLE_DATABASE[spyTarget.roleId].name}.`);
+                    }
+                }
+
+                if (GameState.nightActions.sirTargetId) {
+                    const sirTarget = GameState.players.find(p => p.id === GameState.nightActions.sirTargetId);
+                    if (sirTarget) {
+                        const alignment = AlignmentEngine.getSirAlignment(sirTarget.id);
+                        roundLogs.push(`🔍 Sir investigated ${sirTarget.name} → Result: <strong class="uppercase text-warning">${alignment}</strong>.`);
+                    }
+                }
+
+                // Town Crier morning announcement
+                if (GameState.townCrierMessages[round]) {
+                    roundLogs.push(`📢 Town Crier's Morning Announcement: "${GameState.townCrierMessages[round]}"`);
+                }
+
+                GameState.eventLog.unshift({
+                    round: round,
+                    phase: 'NIGHT RESOLUTION',
+                    text: `<strong>Night ${round} Resolution:</strong><br>` + roundLogs.join('<br>'),
+                    timestamp: new Date().toLocaleTimeString()
+                });
+
+                // Check if Hunter triggered last shot
+                if (GameState.pendingHunterPlayer) {
+                    GameState.phase = 'HUNTER_SHOT';
+                    AppController.updateDashboard();
+                } else {
+                    // Transition to Day
+                    GameState.phase = 'DAY';
+                    AppController.updateDashboard();
+                }
+            }
+        };
+
+        /**
+         * 8. VOTING SYSTEM & SPIN WHEEL TIE BREAKER
+         */
+        const VotingEngine = {
+            renderVotingInterface: function() {
+                const alivePlayers = GameState.players.filter(p => p.status === 'ALIVE');
+                return `
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-bold text-text-primary text-sm"><i class="fa-solid fa-users-rectangle text-warning mr-2"></i> Daytime Vote Elimination</h4>
+                                <p class="text-xs text-text-secondary">All alive players vote. Princess cannot be eliminated by vote. Self-voting is prohibited.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[40vh] overflow-y-auto pr-2" id="voting-inputs-container">
+                            ${alivePlayers.map((p, idx) => `
+                                <div class="bg-surface border border-border p-3 rounded-xl flex items-center justify-between gap-3">
+                                    <span class="text-xs font-bold text-text-primary">${p.name} (<span class="text-text-secondary">${ROLE_DATABASE[p.roleId].name}</span>) voted for:</span>
+                                    <select id="vote-target-${p.id}" class="vote-select bg-background border border-border text-xs text-text-primary rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-warning font-medium w-40">
+                                        <option value="">-- No Vote / Skip --</option>
+                                        ${alivePlayers.filter(target => target.id !== p.id).map(target => `<option value="${target.id}">${target.name}</option>`).join('')}
+                                    </select>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <button onclick="VotingEngine.tallyVotes()" class="w-full bg-warning hover:bg-warning/90 text-secondary font-bold py-3 px-6 rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
+                            <i class="fa-solid fa-scale-balanced"></i> Tally Votes & Determine Outcome
+                        </button>
+                    </div>
+                `;
+            },
+
+            tallyVotes: function() {
+                const alivePlayers = GameState.players.filter(p => p.status === 'ALIVE');
+                const voteCounts = {}; // targetPlayerId -> count
+                const voterRecord = [];
+
+                alivePlayers.forEach(p => {
+                    const select = document.getElementById(`vote-target-${p.id}`);
+                    if (select && select.value) {
+                        const targetId = select.value;
+                        voteCounts[targetId] = (voteCounts[targetId] || 0) + 1;
+                        voterRecord.push({ voter: p.name, target: GameState.players.find(x=>x.id===targetId)?.name });
+                    }
+                });
+
+                if (Object.keys(voteCounts).length === 0) {
+                    alert('No votes were recorded.');
+                    return;
+                }
+
+                // Find max votes
+                let maxVotes = 0;
+                let topTargets = [];
+                Object.keys(voteCounts).forEach(targetId => {
+                    const count = voteCounts[targetId];
+                    if (count > maxVotes) {
+                        maxVotes = count;
+                        topTargets = [targetId];
+                    } else if (count === maxVotes) {
+                        topTargets.push(targetId);
+                    }
+                });
+
+                // Check Princess rule: Princess cannot be eliminated by vote
+                topTargets = topTargets.filter(id => {
+                    const pl = GameState.players.find(p => p.id === id);
+                    if (pl && pl.roleId === 'princess') {
+                        GameState.eventLog.unshift({
+                            round: GameState.currentRound,
+                            phase: 'VOTE RESULT',
+                            text: `👑 Princess (${pl.name}) received the highest votes, but Princesses are immune to vote elimination!`,
+                            timestamp: new Date().toLocaleTimeString()
+                        });
+                        return false;
+                    }
+                    return true;
+                });
+
+                if (topTargets.length === 0) {
+                    alert('No eligible candidates for elimination after applying Princess immunity.');
+                    return;
+                }
+
+                if (topTargets.length === 1) {
+                    const eliminated = GameState.players.find(p => p.id === topTargets[0]);
+                    this.executeVoteElimination(eliminated, maxVotes, voterRecord);
+                } else {
+                    // TIE DETECTED -> Trigger Spin Wheel
+                    GameState.tiedPlayersForWheel = topTargets.map(id => GameState.players.find(p => p.id === id));
+                    this.openWheelModal();
+                }
+            },
+
+            executeVoteElimination: function(player, voteCount, voterRecord) {
+                DeathResolutionEngine.resolveDeath(player, 'VOTE', GameState.currentRound);
+
+                let logText = `<strong>Day ${GameState.currentRound} Vote Elimination:</strong><br>`;
+                voterRecord.forEach(v => { logText += `• ${v.voter} voted for ${v.target}<br>`; });
+                logText += `💀 <strong>${player.name} (${ROLE_DATABASE[player.roleId].name})</strong> was eliminated by daytime vote (${voteCount} votes).`;
+
+                GameState.eventLog.unshift({
+                    round: GameState.currentRound,
+                    phase: 'VOTE ELIMINATION',
+                    text: logText,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+
+                // Check Hunter trigger
+                if (GameState.pendingHunterPlayer) {
+                    GameState.phase = 'HUNTER_SHOT';
+                    AppController.updateDashboard();
+                } else {
+                    this.advanceToNextNight();
+                }
+            },
+
+            openWheelModal: function() {
+                const disk = document.getElementById('wheel-disk');
+                disk.innerHTML = '';
+                disk.classList.remove('spinning');
+                document.getElementById('wheel-result-display').innerText = '';
+                document.getElementById('btn-spin-wheel').classList.remove('hidden');
+                document.getElementById('btn-close-wheel').classList.add('hidden');
+
+                const count = GameState.tiedPlayersForWheel.length;
+                const colors = ['#DC143C', '#B91C1C', '#10B981', '#F59E0B', '#EF4444'];
+
+                GameState.tiedPlayersForWheel.forEach((p, idx) => {
+                    const slice = document.createElement('div');
+                    slice.className = 'absolute inset-0 flex items-center justify-center font-bold text-xs text-text-primary';
+                    slice.style.transform = `rotate(${idx * (360 / count)}deg)`;
+                    slice.innerHTML = `<span style="transform: translateY(-70px);">${p.name}</span>`;
+                    disk.appendChild(slice);
+                });
+
+                document.getElementById('wheel-modal-backdrop').classList.remove('hidden');
+            },
+
+            closeWheelModal: function() {
+                document.getElementById('wheel-modal-backdrop').classList.add('hidden');
+                if (GameState.pendingHunterPlayer) {
+                    GameState.phase = 'HUNTER_SHOT';
+                } else {
+                    this.advanceToNextNight();
+                }
+                AppController.updateDashboard();
+            },
+
+            executeSpinWheel: function() {
+                const disk = document.getElementById('wheel-disk');
+                document.getElementById('btn-spin-wheel').classList.add('hidden');
+                disk.classList.add('spinning');
+
+                setTimeout(() => {
+                    const selectedIdx = Math.floor(Math.random() * GameState.tiedPlayersForWheel.length);
+                    const eliminated = GameState.tiedPlayersForWheel[selectedIdx];
+
+                    document.getElementById('wheel-result-display').innerText = `Selected by Wheel: ${eliminated.name} (${ROLE_DATABASE[eliminated.roleId].name})`;
+                    document.getElementById('btn-close-wheel').classList.remove('hidden');
+
+                    DeathResolutionEngine.resolveDeath(eliminated, 'VOTE', GameState.currentRound);
+
+                    GameState.eventLog.unshift({
+                        round: GameState.currentRound,
+                        phase: 'TIE BREAKER WHEEL',
+                        text: `⚖️ Vote tie detected! Spin Wheel selected <strong>${eliminated.name} (${ROLE_DATABASE[eliminated.roleId].name})</strong> for elimination.`,
+                        timestamp: new Date().toLocaleTimeString()
+                    });
+                }, 3100);
+            },
+
+            renderHunterShotInterface: function() {
+                const hunter = GameState.pendingHunterPlayer;
+                const alivePlayers = GameState.players.filter(p => p.status === 'ALIVE');
+                return `
+                    <div class="space-y-4">
+                        <div class="bg-primary/10 border border-primary/30 p-4 rounded-xl">
+                            <h4 class="font-bold text-primary/80 text-sm mb-1"><i class="fa-solid fa-bow-arrow mr-2"></i> Hunter's Last Shot Activated</h4>
+                            <p class="text-xs text-primary/70">Hunter (${hunter ? hunter.name : 'Hunter'}) has left the game and must immediately shoot one final target (any player, no restrictions).</p>
+                        </div>
+                        <div class="flex gap-3 items-center">
+                            <select id="input-hunter-target" class="bg-surface border border-border text-sm text-text-primary rounded-lg px-3 py-2 flex-1 font-medium">
+                                <option value="">-- Select Hunter Target --</option>
+                                ${alivePlayers.map(p => `<option value="${p.id}">${p.name} (${ROLE_DATABASE[p.roleId].name})</option>`).join('')}
+                            </select>
+                            <button onclick="VotingEngine.resolveHunterShot()" class="bg-primary hover:bg-primary-hover text-secondary font-bold text-xs px-5 py-3 rounded-lg transition">Confirm Hunter Kill</button>
+                        </div>
+                    </div>
+                `;
+            },
+
+            resolveHunterShot: function() {
+                const targetId = document.getElementById('input-hunter-target').value;
+                if (!targetId) {
+                    alert('Please select a target for the Hunter\'s last shot.');
+                    return;
+                }
+                const target = GameState.players.find(p => p.id === targetId);
+                const hunter = GameState.pendingHunterPlayer;
+
+                DeathResolutionEngine.resolveDeath(target, 'HUNTER', GameState.currentRound);
+                GameState.pendingHunterPlayer = null;
+
+                GameState.eventLog.unshift({
+                    round: GameState.currentRound,
+                    phase: 'HUNTER LAST SHOT',
+                    text: `🏹 Hunter's Last Shot: Hunter (${hunter ? hunter.name : 'Hunter'}) shot and killed <strong>${target.name} (${ROLE_DATABASE[target.roleId].name})</strong> before dying.`,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+
+                this.advanceToNextNight();
+            },
+
+            advanceToNextNight: function() {
+                GameState.currentRound += 1;
+                GameState.phase = 'NIGHT';
+                GameState.nightSequenceStep = 0;
+                GameState.nightActions = {
+                    spyTargetId: null,
+                    mafiaTargetId: null,
+                    necroTargetId: null,
+                    assassinUseBullet: false,
+                    assassinTargetId: null,
+                    bodyguardTargetId: null,
+                    sirTargetId: null,
+                    doctorTargetId: null,
+                    townCrierMsgText: '',
+                    mazoonPlayerAId: null,
+                    mazoonPlayerBId: null
+                };
+
+                GameState.eventLog.unshift({
+                    round: GameState.currentRound,
+                    phase: 'NIGHT',
+                    text: `🌙 Night ${GameState.currentRound} has begun.`,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+
+                AppController.updateDashboard();
+            }
+        };
+
+        // Initialize application on load
+        window.onload = function() {
+            AppController.init();
+        };
+    </script>
+</body>
+</html>
