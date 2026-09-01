@@ -518,7 +518,6 @@ tailwind.config = {
 
                 const alivePlayers = GameState.players.filter(p => p.status === 'ALIVE');
 
-                // Dynamically check role selections that actually exist in the current game
                 const bossPlayer = GameState.players.find(p => p.roleId === 'boss');
                 const underbossPlayer = GameState.players.find(p => p.roleId === 'underboss');
 
@@ -528,7 +527,6 @@ tailwind.config = {
                 const isBossDead = !isBossSelected || bossPlayer.status === 'DEAD';
                 const isUnderbossDead = !isUnderbossSelected || underbossPlayer.status === 'DEAD';
 
-                // Bad Team members alive count (Boss, Underboss, SPY if selected and alive)
                 const aliveBadTeam = alivePlayers.filter(p => {
                     const r = ROLE_DATABASE[p.roleId];
                     return r && r.team === 'MAFIA';
@@ -539,8 +537,6 @@ tailwind.config = {
                     return r && (r.team === 'TOWN' || r.team === 'NEUTRAL');
                 });
 
-                // GOOD TEAM WINS CONDITION:
-                // Boss is DEAD AND Underboss is also DEAD OR when there are NO ALIVE players remaining from the Bad Team.
                 const bothLeadersDead = isBossDead && isUnderbossDead;
                 const noBadPlayersRemaining = aliveBadTeam.length === 0;
 
@@ -548,9 +544,6 @@ tailwind.config = {
                     return { winner: 'GOOD', text: 'GOOD TEAM WINS: Both Mafia leaders (Boss and Underboss) are dead, or no bad team members remain alive!' };
                 }
 
-                // BAD TEAM WINS CONDITION:
-                // Number of ALIVE Good Team players <= Number of ALIVE Bad Team players.
-                // Note: Even if SPY is alive, if both Boss and Underboss are dead, Good wins immediately (handled by the rule above).
                 if (aliveGoodTeam.length <= aliveBadTeam.length) {
                     return { winner: 'BAD', text: 'BAD TEAM WINS: Number of alive Good Team players is less than or equal to the Bad Team!' };
                 }
@@ -1050,21 +1043,15 @@ tailwind.config = {
                 const hasRole = (rId) => GameState.selectedRolesConfig[rId] > 0;
                 const steps = [];
                 
-                // 1. DOCTOR
                 if (hasRole('doctor')) steps.push({ id: 'doctor', name: 'Doctor Protection' });
-                // 2. SIR
                 if (hasRole('sir')) steps.push({ id: 'sir', name: 'Sir Investigation' });
-                // 3. ASSASSIN
                 if (hasRole('assassin')) steps.push({ id: 'assassin', name: 'Assassin Bullet' });
-                // 4. MAZOON (Night 1 only)
                 if (hasRole('mazoon') && GameState.currentRound === 1) steps.push({ id: 'mazoon', name: 'Mazoon Marriage' });
                 
-                // Other active roles according to game logic
                 if (hasRole('necro')) steps.push({ id: 'necro', name: 'Necro Revival' });
                 if (hasRole('bodyguard')) steps.push({ id: 'bodyguard', name: 'Bodyguard Protection' });
                 if (hasRole('town_crier')) steps.push({ id: 'town_crier', name: 'Town Crier Message' });
 
-                // FINAL TWO POSITIONS: SECOND LAST -> SPY, LAST -> BOSS / UNDERBOSS
                 if (hasRole('spy')) steps.push({ id: 'spy', name: 'SPY Investigation' });
                 if (hasRole('boss') || hasRole('underboss')) steps.push({ id: 'mafia', name: 'Mafia Kill' });
 
@@ -1125,7 +1112,8 @@ tailwind.config = {
                         if (bossAlive) killerLabel = "Boss Mafia Kill";
                         else if (underbossAlive) killerLabel = "Underboss Mafia Kill (Boss Dead)";
 
-                        const validMafiaTargets = alivePlayers.filter(p => p.roleId !== 'boss' && p.roleId !== 'underboss' && p.roleId !== 'spy');
+                        // King rule: King cannot be killed by Mafia/night kill.
+                        const validMafiaTargets = alivePlayers.filter(p => p.roleId !== 'boss' && p.roleId !== 'underboss' && p.roleId !== 'spy' && p.roleId !== 'king');
                         const mafiaDone = isCompleted('mafia');
                         
                         if (!bossAlive && !underbossAlive) {
@@ -1161,7 +1149,7 @@ tailwind.config = {
                                         <span class="flex items-center gap-2"><i class="fa-solid fa-skull-crossbones"></i> ${killerLabel}</span>
                                     </div>
                                     <select id="input-mafia-target" onchange="NightSequenceManager.autoCompleteMafia(this.value)" class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium">
-                                        <option value="">-- Select Mafia Target --</option>
+                                        <option value="">-- Select Mafia Target (King is immune) --</option>
                                         ${validMafiaTargets.map(p => `<option value="${p.id}" ${GameState.nightActions.mafiaTargetId === p.id ? 'selected' : ''}>${ROLE_DATABASE[p.roleId].name} (${p.name})</option>`).join('')}
                                     </select>
                                 </div>
@@ -1248,7 +1236,6 @@ tailwind.config = {
                         }
                         break;
                     case 'bodyguard':
-                        // Fixed Bodyguard Edit & Selection Logic
                         const bgDone = isCompleted('bodyguard');
                         if (bgDone) {
                             const selectedPl = GameState.players.find(p => p.id === GameState.bodyguardPermanentTargetId);
@@ -1546,19 +1533,440 @@ tailwind.config = {
 
         const NightResolutionEngine = {
             resolveNight: function() {
-                // Night resolution logic stub
-                GameState.phase = 'DAY';
-                GameState.currentRound++;
+                let killedPlayerId = GameState.nightActions.mafiaTargetId;
+                let doctorTargetId = GameState.nightActions.doctorTargetId;
+                let bodyguardTargetId = GameState.bodyguardPermanentTargetId;
+
+                let actualKilledPlayer = null;
+                if (killedPlayerId) {
+                    if (killedPlayerId === doctorTargetId || killedPlayerId === bodyguardTargetId) {
+                        // Protected!
+                    } else {
+                        const targetPl = GameState.players.find(p => p.id === killedPlayerId);
+                        // King rule: King cannot be killed by Mafia/night kill.
+                        if (targetPl && targetPl.roleId !== 'king') {
+                            actualKilledPlayer = targetPl;
+                        }
+                    }
+                }
+
+                // Assassin bullet resolution
+                let assassinKilledPlayer = null;
+                if (GameState.nightActions.assassinUseBullet && GameState.nightActions.assassinTargetId && !GameState.specialAbilityState.assassinBulletUsed) {
+                    GameState.specialAbilityState.assassinBulletUsed = true;
+                    assassinKilledPlayer = GameState.players.find(p => p.id === GameState.nightActions.assassinTargetId);
+                }
+
+                // Necro revival resolution
+                let revivedPlayer = null;
+                if (GameState.nightActions.necroTargetId && !GameState.specialAbilityState.necroUsed) {
+                    GameState.specialAbilityState.necroUsed = true;
+                    revivedPlayer = GameState.players.find(p => p.id === GameState.nightActions.necroTargetId);
+                    if (revivedPlayer) {
+                        revivedPlayer.status = 'ALIVE';
+                        revivedPlayer.deathRound = null;
+                        revivedPlayer.deathCause = null;
+                    }
+                }
+
+                let deathSummaryText = `☀️ Day ${GameState.currentRound} begins.`;
+                if (revivedPlayer) {
+                    deathSummaryText += ` Necro revived ${revivedPlayer.name}.`;
+                }
+
+                let hunterTriggered = false;
+                [actualKilledPlayer, assassinKilledPlayer].forEach(victim => {
+                    if (victim && victim.status === 'ALIVE') {
+                        victim.status = 'DEAD';
+                        victim.deathRound = GameState.currentRound;
+                        victim.deathCause = 'NIGHT KILL';
+                        deathSummaryText += ` ${victim.name} was killed during the night.`;
+
+                        // Mazoon marriage fate sharing
+                        if (GameState.marriage.active && (GameState.marriage.playerAId === victim.id || GameState.marriage.playerBId === victim.id)) {
+                            const partnerId = GameState.marriage.playerAId === victim.id ? GameState.marriage.playerBId : GameState.marriage.playerAId;
+                            const partner = GameState.players.find(p => p.id === partnerId);
+                            if (partner && partner.status === 'ALIVE') {
+                                partner.status = 'DEAD';
+                                partner.deathRound = GameState.currentRound;
+                                partner.deathCause = 'HEARTBROKEN (MAZOON)';
+                                deathSummaryText += ` ${partner.name} died of a broken heart due to marriage fate!`;
+                                if (partner.roleId === 'hunter' && !GameState.specialAbilityState.hunterBulletUsed) {
+                                    GameState.pendingHunterPlayer = partner;
+                                    hunterTriggered = true;
+                                }
+                            }
+                        }
+
+                        if (victim.roleId === 'hunter' && !GameState.specialAbilityState.hunterBulletUsed) {
+                            GameState.pendingHunterPlayer = victim;
+                            hunterTriggered = true;
+                        }
+                    }
+                });
+
+                GameState.eventLog.unshift({
+                    round: GameState.currentRound, phase: 'NIGHT RESOLUTION',
+                    text: deathSummaryText,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+
+                // Reset night actions for next night
+                GameState.nightActions = { spyTargetId: null, mafiaTargetId: null, necroTargetId: null, assassinUseBullet: false, assassinTargetId: null, bodyguardTargetId: null, sirTargetId: null, doctorTargetId: null, townCrierMsgText: '', mazoonPlayerAId: null, mazoonPlayerBId: null };
+                GameState.nightSequenceStep = 0;
+
+                if (WinChecker.triggerEndGameIfNeeded()) return;
+
+                if (hunterTriggered) {
+                    GameState.phase = 'HUNTER_SHOT';
+                } else {
+                    GameState.phase = 'DAY';
+                }
+
                 AppController.updateDashboard();
             }
         };
 
+        /**
+         * VOTING SYSTEM ENGINE (COMPLETELY FIXED & ENHANCED)
+         */
         const VotingEngine = {
             renderVotingInterface: function() {
-                return `<div>Day Voting Interface Placeholder</div>`;
+                const alivePlayers = GameState.players.filter(p => p.status === 'ALIVE');
+
+                let html = `
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between pb-2 border-b border-border">
+                            <div>
+                                <h4 class="text-sm sm:text-base font-bold text-text-primary flex items-center gap-2">
+                                    <i class="fa-solid fa-check-to-slot text-warning"></i> Daytime Voting Phase
+                                </h4>
+                                <p class="text-xs text-text-secondary">Assign vote counts for each living player below.</p>
+                            </div>
+                            <span class="text-xs font-mono bg-warning/10 text-warning px-2.5 py-1 rounded-lg border border-warning/30 font-bold">Round ${GameState.currentRound}</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[45vh] overflow-y-auto pr-1" id="voting-players-list">
+                `;
+
+                alivePlayers.forEach(player => {
+                    html += `
+                        <div class="flex items-center justify-between bg-surface border border-border rounded-xl p-3">
+                            <div class="font-bold text-text-primary text-xs sm:text-sm truncate">
+                                ${player.name}
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="VotingEngine.adjustVote('${player.id}', -1)" class="w-7 h-7 bg-card hover:bg-border text-text-secondary rounded-lg font-bold flex items-center justify-center transition touch-manipulation">-</button>
+                                <span id="vote-count-${player.id}" class="w-6 text-center font-mono font-bold text-text-primary text-sm">0</span>
+                                <button type="button" onclick="VotingEngine.adjustVote('${player.id}', 1)" class="w-7 h-7 bg-card hover:bg-border text-text-secondary rounded-lg font-bold flex items-center justify-center transition touch-manipulation">+</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+
+                        <div class="pt-3 border-t border-border flex items-center justify-end gap-3">
+                            <button type="button" onclick="VotingEngine.submitVotes()" class="w-full bg-primary hover:bg-primary-hover text-secondary font-bold py-3.5 px-6 rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-xs sm:text-sm uppercase tracking-wider touch-manipulation">
+                                <i class="fa-solid fa-gavel"></i> Calculate Votes & Conclude Day
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return html;
             },
+
+            adjustVote: function(playerId, delta) {
+                const span = document.getElementById(`vote-count-${playerId}`);
+                if (!span) return;
+                let current = parseInt(span.innerText) || 0;
+                let next = current + delta;
+                if (next < 0) next = 0;
+                span.innerText = next;
+            },
+
+            submitVotes: function() {
+                const alivePlayers = GameState.players.filter(p => p.status === 'ALIVE');
+                let voteRecord = {};
+                let totalVotesCast = 0;
+
+                alivePlayers.forEach(p => {
+                    const span = document.getElementById(`vote-count-${p.id}`);
+                    const count = span ? parseInt(span.innerText) || 0 : 0;
+                    voteRecord[p.id] = count;
+                    totalVotesCast += count;
+                });
+
+                GameState._tempRecordedVotes = voteRecord;
+
+                // 5. NO VOTES: If there are no votes or vote count is invalid
+                if (totalVotesCast === 0) {
+                    GameState.singleSelectedPlayer = null;
+                    document.getElementById('vote-result-details-text').innerHTML = `
+                        <div class="font-bold text-warning text-base mb-1">NO VOTES CAST</div>
+                        <div>No votes were recorded during this phase.</div>
+                    `;
+                    document.getElementById('single-vote-options-container').classList.add('hidden');
+                    document.getElementById('single-vote-continue-container').classList.remove('hidden');
+                    document.getElementById('vote-result-modal-backdrop').classList.remove('hidden');
+                    return;
+                }
+
+                // Find highest vote count
+                let maxVotes = -1;
+                Object.keys(voteRecord).forEach(pId => {
+                    if (voteRecord[pId] > maxVotes) {
+                        maxVotes = voteRecord[pId];
+                    }
+                });
+
+                let highestPlayers = [];
+                Object.keys(voteRecord).forEach(pId => {
+                    if (voteRecord[pId] === maxVotes && maxVotes > 0) {
+                        highestPlayers.push(pId);
+                    }
+                });
+
+                // 4. TIE: If two or more players have the same highest number of votes
+                if (highestPlayers.length > 1) {
+                    GameState.tiedPlayersForWheel = highestPlayers;
+                    let tiedNames = highestPlayers.map(id => GameState.players.find(p => p.id === id).name).join(' and ');
+                    
+                    GameState.eventLog.unshift({
+                        round: GameState.currentRound, phase: 'VOTING',
+                        text: `Voting tie between ${tiedNames}. Spin Wheel used.`,
+                        timestamp: new Date().toLocaleTimeString()
+                    });
+
+                    this.openWheelModal(highestPlayers);
+                    return;
+                }
+
+                // Single highest voted player
+                if (highestPlayers.length === 1) {
+                    const topPlayerId = highestPlayers[0];
+                    const topPlayer = GameState.players.find(p => p.id === topPlayerId);
+                    GameState.singleSelectedPlayer = topPlayer;
+
+                    document.getElementById('vote-result-details-text').innerHTML = `
+                        <div class="font-bold text-text-primary text-base mb-1">Highest Votes: <span class="text-primary">${topPlayer.name}</span> (${maxVotes} votes)</div>
+                        <div class="text-xs text-text-secondary">Please review and confirm the final decision below.</div>
+                    `;
+                    document.getElementById('btn-eliminate-single-name').innerText = topPlayer.name;
+                    document.getElementById('single-vote-options-container').classList.remove('hidden');
+                    document.getElementById('single-vote-continue-container').classList.add('hidden');
+                    document.getElementById('vote-result-modal-backdrop').classList.remove('hidden');
+                }
+            },
+
+            confirmSingleElimination: function() {
+                const player = GameState.singleSelectedPlayer;
+                document.getElementById('vote-result-modal-backdrop').classList.add('hidden');
+                if (player) {
+                    this.executeElimination(player);
+                }
+            },
+
+            confirmSingleNoElimination: function() {
+                document.getElementById('vote-result-modal-backdrop').classList.add('hidden');
+                GameState.eventLog.unshift({
+                    round: GameState.currentRound, phase: 'VOTING',
+                    text: `Voting completed: NO ELIMINATION.`,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+                this.concludeVotingPhase();
+            },
+
+            executeContinueToNightFromModal: function(modalId) {
+                document.getElementById(modalId).classList.add('hidden');
+                GameState.eventLog.unshift({
+                    round: GameState.currentRound, phase: 'VOTING',
+                    text: `Voting completed: NO ELIMINATION.`,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+                this.concludeVotingPhase();
+            },
+
+            openWheelModal: function(tiedIds) {
+                const disk = document.getElementById('wheel-disk');
+                disk.innerHTML = '';
+                disk.className = 'absolute inset-0 w-full h-full flex items-center justify-center relative transition-transform duration-3000';
+                document.getElementById('wheel-result-display').innerText = '';
+                document.getElementById('wheel-post-spin-options').classList.add('hidden');
+                document.getElementById('wheel-continue-container').classList.add('hidden');
+                document.getElementById('wheel-initial-action-container').classList.remove('hidden');
+
+                const count = tiedIds.length;
+                tiedIds.forEach((id, idx) => {
+                    const pl = GameState.players.find(p => p.id === id);
+                    const angle = (360 / count) * idx;
+                    const slice = document.createElement('div');
+                    slice.className = 'absolute w-full h-full flex items-start justify-center pt-2 font-bold text-xs';
+                    slice.style.transform = `rotate(${angle}deg)`;
+                    slice.innerHTML = `<span class="bg-surface px-2 py-1 rounded border border-border text-text-primary">${pl.name}</span>`;
+                    disk.appendChild(slice);
+                });
+
+                document.getElementById('wheel-modal-backdrop').classList.remove('hidden');
+            },
+
+            executeSpinWheel: function() {
+                const disk = document.getElementById('wheel-disk');
+                const tiedIds = GameState.tiedPlayersForWheel;
+                if (!tiedIds || tiedIds.length === 0) return;
+
+                document.getElementById('btn-spin-wheel').disabled = true;
+                disk.classList.add('spinning');
+
+                setTimeout(() => {
+                    disk.classList.remove('spinning');
+                    const randomIndex = Math.floor(Math.random() * tiedIds.length);
+                    const selectedId = tiedIds[randomIndex];
+                    const selectedPlayer = GameState.players.find(p => p.id === selectedId);
+                    GameState.wheelSelectedPlayer = selectedPlayer;
+
+                    document.getElementById('wheel-result-display').innerText = `Spin Result: ${selectedPlayer.name}`;
+                    document.getElementById('btn-eliminate-selected-name').innerText = selectedPlayer.name;
+                    document.getElementById('wheel-initial-action-container').classList.add('hidden');
+                    document.getElementById('wheel-post-spin-options').classList.remove('hidden');
+                }, 3000);
+            },
+
+            confirmEliminateSelected: function() {
+                const player = GameState.wheelSelectedPlayer;
+                document.getElementById('wheel-modal-backdrop').classList.add('hidden');
+                if (player) {
+                    this.executeElimination(player);
+                }
+            },
+
+            confirmNoElimination: function() {
+                document.getElementById('wheel-modal-backdrop').classList.add('hidden');
+                GameState.eventLog.unshift({
+                    round: GameState.currentRound, phase: 'VOTING',
+                    text: `Voting completed: NO ELIMINATION.`,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+                this.concludeVotingPhase();
+            },
+
+            executeElimination: function(player) {
+                // 7. Princess Rule: Princess does NOT leave the game when eliminated by voting.
+                if (player.roleId === 'princess') {
+                    GameState.eventLog.unshift({
+                        round: GameState.currentRound, phase: 'VOTING',
+                        text: `Voting completed: ${player.name} received highest votes but is the Princess and is immune to vote elimination!`,
+                        timestamp: new Date().toLocaleTimeString()
+                    });
+                    this.concludeVotingPhase();
+                    return;
+                }
+
+                // 6. Elimination
+                player.status = 'DEAD';
+                player.deathRound = GameState.currentRound;
+                player.deathCause = 'VOTE ELIMINATION';
+
+                GameState.eventLog.unshift({
+                    round: GameState.currentRound, phase: 'VOTING',
+                    text: `Voting completed: ${player.name} eliminated.`,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+
+                // Mazoon marriage fate sharing
+                if (GameState.marriage.active && (GameState.marriage.playerAId === player.id || GameState.marriage.playerBId === player.id)) {
+                    const partnerId = GameState.marriage.playerAId === player.id ? GameState.marriage.playerBId : GameState.marriage.playerAId;
+                    const partner = GameState.players.find(p => p.id === partnerId);
+                    if (partner && partner.status === 'ALIVE') {
+                        partner.status = 'DEAD';
+                        partner.deathRound = GameState.currentRound;
+                        partner.deathCause = 'HEARTBROKEN (MAZOON)';
+                        GameState.eventLog.unshift({
+                            round: GameState.currentRound, phase: 'VOTING',
+                            text: `${partner.name} died of a broken heart due to marriage fate!`,
+                            timestamp: new Date().toLocaleTimeString()
+                        });
+                    }
+                }
+
+                // Hunter death trigger
+                if (player.roleId === 'hunter' && !GameState.specialAbilityState.hunterBulletUsed) {
+                    GameState.pendingHunterPlayer = player;
+                    GameState.phase = 'HUNTER_SHOT';
+                    AppController.updateDashboard();
+                    return;
+                }
+
+                this.concludeVotingPhase();
+            },
+
+            concludeVotingPhase: function() {
+                if (WinChecker.triggerEndGameIfNeeded()) return;
+                
+                // Reset voting temporary state
+                GameState.tiedPlayersForWheel = [];
+                GameState.wheelSelectedPlayer = null;
+                GameState.singleSelectedPlayer = null;
+                GameState._tempRecordedVotes = null;
+
+                // Advance to next round Night phase
+                GameState.phase = 'NIGHT';
+                GameState.currentRound++;
+                GameState.nightSequenceStep = 0;
+                GameState.completedNightActions = {};
+
+                GameState.eventLog.unshift({
+                    round: GameState.currentRound, phase: 'NIGHT',
+                    text: `🌙 Night ${GameState.currentRound} has begun.`,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+
+                AppController.updateDashboard();
+            },
+
             renderHunterShotInterface: function() {
-                return `<div>Hunter Shot Interface Placeholder</div>`;
+                const hunter = GameState.pendingHunterPlayer;
+                const alivePlayers = GameState.players.filter(p => p.status === 'ALIVE');
+
+                return `
+                    <div class="space-y-4">
+                        <div class="p-3 bg-surface border border-border rounded-xl">
+                            <h4 class="font-bold text-text-primary text-sm mb-1"><i class="fa-solid fa-bow-arrow text-primary"></i> Hunter's Retaliation Shot</h4>
+                            <p class="text-xs text-text-secondary">${hunter ? hunter.name : 'Hunter'} was eliminated and can fire their final bullet at any living player before dying.</p>
+                        </div>
+                        <select id="hunter-target-select" class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium">
+                            <option value="">-- Select Target for Hunter Bullet --</option>
+                            ${alivePlayers.map(p => `<option value="${p.id}">${p.name} (${ROLE_DATABASE[p.roleId].name})</option>`).join('')}
+                        </select>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="VotingEngine.confirmHunterShot(false)" class="w-1/2 bg-card hover:bg-border text-text-secondary font-bold py-3 px-4 rounded-xl text-xs sm:text-sm transition">Skip Shot</button>
+                            <button type="button" onclick="VotingEngine.confirmHunterShot(true)" class="w-1/2 bg-danger hover:bg-danger/90 text-secondary font-bold py-3 px-4 rounded-xl text-xs sm:text-sm transition">Fire Bullet</button>
+                        </div>
+                    </div>
+                `;
+            },
+
+            confirmHunterShot: function(fire) {
+                GameState.specialAbilityState.hunterBulletUsed = true;
+                if (fire) {
+                    const targetId = document.getElementById('hunter-target-select').value;
+                    if (targetId) {
+                        const target = GameState.players.find(p => p.id === targetId);
+                        if (target && target.status === 'ALIVE') {
+                            target.status = 'DEAD';
+                            target.deathRound = GameState.currentRound;
+                            target.deathCause = 'HUNTER SHOT';
+                            GameState.eventLog.unshift({
+                                round: GameState.currentRound, phase: 'HUNTER SHOT',
+                                text: `Hunter fired and eliminated ${target.name}.`,
+                                timestamp: new Date().toLocaleTimeString()
+                            });
+                        }
+                    }
+                }
+                GameState.pendingHunterPlayer = null;
+                this.concludeVotingPhase();
             }
         };
     </script>
