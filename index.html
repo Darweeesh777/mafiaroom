@@ -1546,19 +1546,403 @@ tailwind.config = {
 
         const NightResolutionEngine = {
             resolveNight: function() {
-                // Night resolution logic stub
+                let killedPlayerId = GameState.nightActions.mafiaTargetId;
+                const doctorProtectedId = GameState.nightActions.doctorTargetId;
+                const bodyguardProtectedId = GameState.bodyguardPermanentTargetId;
+
+                // Check protection
+                if (killedPlayerId && (killedPlayerId === doctorProtectedId || killedPlayerId === bodyguardProtectedId)) {
+                    killedPlayerId = null; // Saved!
+                }
+
+                // Assassin bullet processing
+                let assassinVictimId = null;
+                if (GameState.nightActions.assassinUseBullet && GameState.nightActions.assassinTargetId && !GameState.specialAbilityState.assassinBulletUsed) {
+                    assassinVictimId = GameState.nightActions.assassinTargetId;
+                    GameState.specialAbilityState.assassinBulletUsed = true;
+                }
+
+                // Necro revival processing
+                let revivedPlayerId = GameState.nightActions.necroTargetId;
+                if (revivedPlayerId && !GameState.specialAbilityState.necroUsed) {
+                    const pl = GameState.players.find(p => p.id === revivedPlayerId);
+                    if (pl && pl.status === 'DEAD') {
+                        pl.status = 'ALIVE';
+                        pl.deathRound = null;
+                        pl.deathCause = null;
+                        GameState.specialAbilityState.necroUsed = true;
+                        GameState.eventLog.unshift({
+                            round: GameState.currentRound, phase: 'NIGHT',
+                            text: `👻 Necro successfully revived ${pl.name}!`,
+                            timestamp: new Date().toLocaleTimeString()
+                        });
+                    }
+                }
+
+                let casualties = [];
+                if (killedPlayerId) {
+                    const pl = GameState.players.find(p => p.id === killedPlayerId);
+                    if (pl && pl.status === 'ALIVE') {
+                        // Check if King is target (King is immune to Mafia kill)
+                        if (pl.roleId === 'king') {
+                            GameState.eventLog.unshift({
+                                round: GameState.currentRound, phase: 'NIGHT',
+                                text: `👑 King ${pl.name} was targeted by Mafia but is immune to night kills!`,
+                                timestamp: new Date().toLocaleTimeString()
+                            });
+                        } else {
+                            casualties.push({ player: pl, cause: 'MAFIA_KILL' });
+                        }
+                    }
+                }
+
+                if (assassinVictimId) {
+                    const pl = GameState.players.find(p => p.id === assassinVictimId);
+                    if (pl && pl.status === 'ALIVE') {
+                        casualties.push({ player: pl, cause: 'ASSASSIN_BULLET' });
+                    }
+                }
+
+                // Apply deaths with cascading checks (Mazoon marriage, Bodyguard sacrifice if applicable, Hunter trigger)
+                casualties.forEach(item => {
+                    this.killPlayerWithCascades(item.player, item.cause);
+                });
+
+                // Reset Night Actions for next night
+                GameState.nightActions = { spyTargetId: null, mafiaTargetId: null, necroTargetId: null, assassinUseBullet: false, assassinTargetId: null, bodyguardTargetId: null, sirTargetId: null, doctorTargetId: null, townCrierMsgText: '', mazoonPlayerAId: null, mazoonPlayerBId: null };
+                GameState.nightSequenceStep = 0;
+                GameState.completedNightActions = {};
+
+                if (WinChecker.triggerEndGameIfNeeded()) return;
+
                 GameState.phase = 'DAY';
-                GameState.currentRound++;
+                GameState.eventLog.unshift({
+                    round: GameState.currentRound, phase: 'DAY',
+                    text: `☀️ Day ${GameState.currentRound} has begun. Proceeding to Vote Resolution.`,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+
                 AppController.updateDashboard();
+            },
+
+            killPlayerWithCascades: function(player, cause) {
+                if (player.status !== 'ALIVE') return;
+                player.status = 'DEAD';
+                player.deathRound = GameState.currentRound;
+                player.deathCause = cause;
+
+                GameState.eventLog.unshift({
+                    round: GameState.currentRound, phase: 'NIGHT',
+                    text: `💀 ${player.name} (${ROLE_DATABASE[player.roleId].name}) has died during the night due to [${cause}].`,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+
+                // Check Mazoon Marriage pairing death cascade
+                if (GameState.marriage.active && (GameState.marriage.playerAId === player.id || GameState.marriage.playerBId === player.id)) {
+                    const partnerId = GameState.marriage.playerAId === player.id ? GameState.marriage.playerBId : GameState.marriage.playerAId;
+                    const partner = GameState.players.find(p => p.id === partnerId);
+                    if (partner && partner.status === 'ALIVE') {
+                        GameState.eventLog.unshift({
+                            round: GameState.currentRound, phase: 'NIGHT',
+                            text: `💍 Mazoon Marriage grief: Partner ${partner.name} dies alongside ${player.name}!`,
+                            timestamp: new Date().toLocaleTimeString()
+                        });
+                        this.killPlayerWithCascades(partner, 'MAZOON_MARRIAGE_GRIEF');
+                    }
+                }
+
+                // Check Hunter ability trigger
+                if (player.roleId === 'hunter' && !GameState.specialAbilityState.hunterBulletUsed) {
+                    GameState.specialAbilityState.hunterBulletUsed = true;
+                    GameState.pendingHunterPlayer = player;
+                    GameState.phase = 'HUNTER_SHOT';
+                    GameState.eventLog.unshift({
+                        round: GameState.currentRound, phase: 'HUNTER_SHOT',
+                        text: `🎯 Hunter ${player.name} is dying and can take someone down with them!`,
+                        timestamp: new Date().toLocaleTimeString()
+                    });
+                }
             }
         };
 
         const VotingEngine = {
             renderVotingInterface: function() {
-                return `<div>Day Voting Interface Placeholder</div>`;
+                const alivePlayers = GameState.players.filter(p => p.status === 'ALIVE');
+                return `
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between pb-2 border-b border-border">
+                            <div>
+                                <h4 class="font-bold text-text-primary text-sm sm:text-base flex items-center gap-2">
+                                    <i class="fa-solid fa-check-to-slot text-warning"></i> Day Voting & Resolution Interface
+                                </h4>
+                                <p class="text-xs text-text-secondary">Select player(s) who received the highest votes from the city.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[45vh] overflow-y-auto pr-1" id="voting-player-checkboxes">
+                            ${alivePlayers.map(p => `
+                                <label class="flex items-center justify-between bg-surface border border-border hover:border-warning/50 p-3 rounded-xl cursor-pointer transition select-none">
+                                    <div class="flex items-center gap-2.5">
+                                        <input type="checkbox" name="vote-selection" value="${p.id}" class="w-4 h-4 accent-warning rounded cursor-pointer">
+                                        <div>
+                                            <div class="font-bold text-text-primary text-xs sm:text-sm">${p.name}</div>
+                                            <div class="text-[10px] text-text-secondary font-mono">${ROLE_DATABASE[p.roleId].name}</div>
+                                        </div>
+                                    </div>
+                                    <span class="text-[10px] font-mono bg-background px-2 py-0.5 rounded border border-border text-text-secondary">ALIVE</span>
+                                </label>
+                            `).join('')}
+                        </div>
+
+                        <div class="flex items-center justify-end gap-3 pt-3 border-t border-border">
+                            <button onclick="VotingEngine.processSelectedVotes()" class="w-full sm:w-auto bg-warning hover:bg-warning/95 text-secondary font-bold py-3 px-6 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-xs sm:text-sm uppercase tracking-wider touch-manipulation">
+                                <i class="fa-solid fa-arrow-right"></i> Proceed with Vote Results
+                            </button>
+                        </div>
+                    </div>
+                `;
             },
+
+            processSelectedVotes: function() {
+                const checkedBoxes = document.querySelectorAll('input[name="vote-selection"]:checked');
+                if (checkedBoxes.length === 0) {
+                    alert('Please select at least one player who received the highest votes.');
+                    return;
+                }
+
+                const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
+                GameState._tempRecordedVotes = selectedIds;
+
+                if (selectedIds.length === 1) {
+                    // Single player selected
+                    const pl = GameState.players.find(p => p.id === selectedIds[0]);
+                    GameState.singleSelectedPlayer = pl;
+                    
+                    document.getElementById('vote-result-details-text').innerHTML = `<strong class="text-text-primary text-base">${pl.name}</strong> (${ROLE_DATABASE[pl.roleId].name}) received the highest votes.`;
+                    document.getElementById('btn-eliminate-single-name').innerText = pl.name.toUpperCase();
+                    
+                    document.getElementById('single-vote-options-container').classList.remove('hidden');
+                    document.getElementById('single-vote-continue-container').classList.add('hidden');
+                    document.getElementById('vote-result-modal-backdrop').classList.remove('hidden');
+                } else {
+                    // Multiple players selected — Tie! Open Spin Wheel
+                    GameState.tiedPlayersForWheel = selectedIds;
+                    this.setupSpinWheelModal();
+                    document.getElementById('wheel-modal-backdrop').classList.remove('hidden');
+                }
+            },
+
+            confirmSingleElimination: function() {
+                const pl = GameState.singleSelectedPlayer;
+                document.getElementById('vote-result-modal-backdrop').classList.add('hidden');
+                
+                // Check Princess immunity
+                if (pl.roleId === 'princess') {
+                    GameState.eventLog.unshift({
+                        round: GameState.currentRound, phase: 'DAY',
+                        text: `👸 Princess ${pl.name} was voted for elimination by the city, but Princess is immune to daytime vote elimination!`,
+                        timestamp: new Date().toLocaleTimeString()
+                    });
+                    alert(`Princess ${pl.name} is immune to daytime vote elimination! Nobody dies.`);
+                    this.finalizeNoEliminationRecord();
+                    return;
+                }
+
+                this.executeElimination(pl, 'VOTE_ELIMINATION');
+            },
+
+            confirmSingleNoElimination: function() {
+                document.getElementById('single-vote-options-container').classList.add('hidden');
+                document.getElementById('single-vote-continue-container').classList.remove('hidden');
+                document.getElementById('vote-result-details-text').innerHTML = `<span class="text-success font-bold">NO ELIMINATION CHOSEN</span><br>Nobody dies. The game continues to the next night.`;
+                this.finalizeNoEliminationRecord();
+            },
+
+            setupSpinWheelModal: function() {
+                const disk = document.getElementById('wheel-disk');
+                disk.innerHTML = '';
+                disk.classList.remove('spinning');
+                document.getElementById('wheel-result-display').innerText = '';
+                document.getElementById('wheel-post-spin-options').classList.add('hidden');
+                document.getElementById('wheel-continue-container').classList.add('hidden');
+                document.getElementById('wheel-initial-action-container').classList.remove('hidden');
+
+                const count = GameState.tiedPlayersForWheel.length;
+                GameState.tiedPlayersForWheel.forEach((pId, idx) => {
+                    const pl = GameState.players.find(p => p.id === pId);
+                    const angle = (360 / count) * idx;
+                    const slice = document.createElement('div');
+                    slice.className = 'absolute inset-0 flex items-center justify-center font-bold text-xs text-text-primary';
+                    slice.style.transform = `rotate(${angle}deg)`;
+                    slice.innerHTML = `<span class="bg-surface/90 px-2 py-1 rounded border border-border shadow">${pl.name}</span>`;
+                    disk.appendChild(slice);
+                });
+            },
+
+            executeSpinWheel: function() {
+                const disk = document.getElementById('wheel-disk');
+                disk.classList.remove('spinning');
+                void disk.offsetWidth; // trigger reflow
+                disk.classList.add('spinning');
+
+                document.getElementById('wheel-initial-action-container').classList.add('hidden');
+
+                setTimeout(() => {
+                    const tied = GameState.tiedPlayersForWheel;
+                    const chosenId = tied[Math.floor(Math.random() * tied.length)];
+                    const chosenPl = GameState.players.find(p => p.id === chosenId);
+                    GameState.wheelSelectedPlayer = chosenPl;
+
+                    document.getElementById('wheel-result-display').innerHTML = `SPIN RESULT: <span class="text-text-primary font-bold underline">${chosenPl.name}</span>`;
+                    document.getElementById('btn-eliminate-selected-name').innerText = chosenPl.name.toUpperCase();
+                    document.getElementById('wheel-post-spin-options').classList.remove('hidden');
+                }, 3100);
+            },
+
+            confirmEliminateSelected: function() {
+                const pl = GameState.wheelSelectedPlayer;
+                document.getElementById('wheel-modal-backdrop').classList.add('hidden');
+
+                if (pl.roleId === 'princess') {
+                    GameState.eventLog.unshift({
+                        round: GameState.currentRound, phase: 'DAY',
+                        text: `👸 Princess ${pl.name} was chosen by the wheel, but Princess is immune to daytime vote elimination!`,
+                        timestamp: new Date().toLocaleTimeString()
+                    });
+                    alert(`Princess ${pl.name} is immune to daytime vote elimination! Nobody dies.`);
+                    this.finalizeNoEliminationRecord();
+                    return;
+                }
+
+                this.executeElimination(pl, 'VOTE_ELIMINATION_WHEEL');
+            },
+
+            confirmNoElimination: function() {
+                document.getElementById('wheel-post-spin-options').classList.add('hidden');
+                document.getElementById('wheel-continue-container').classList.remove('hidden');
+                document.getElementById('wheel-result-display').innerHTML = `<span class="text-success font-bold">NO ELIMINATION RECORDED</span>`;
+                this.finalizeNoEliminationRecord();
+            },
+
+            executeContinueToNightFromModal: function(modalId) {
+                document.getElementById(modalId).classList.add('hidden');
+                this.advanceToNextNight();
+            },
+
+            finalizeNoEliminationRecord: function() {
+                GameState.eventLog.unshift({
+                    round: GameState.currentRound, phase: 'DAY',
+                    text: `⚖️ Day ${GameState.currentRound} Vote Resolution: NO ELIMINATION chosen. Nobody dies.`,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+            },
+
+            executeElimination: function(player, cause) {
+                if (player.status !== 'ALIVE') return;
+                player.status = 'DEAD';
+                player.deathRound = GameState.currentRound;
+                player.deathCause = cause;
+
+                GameState.eventLog.unshift({
+                    round: GameState.currentRound, phase: 'DAY',
+                    text: `⚖️ City Vote Elimination: ${player.name} (${ROLE_DATABASE[player.roleId].name}) was eliminated by daytime vote.`,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+
+                // Mazoon marriage death cascade check
+                if (GameState.marriage.active && (GameState.marriage.playerAId === player.id || GameState.marriage.playerBId === player.id)) {
+                    const partnerId = GameState.marriage.playerAId === player.id ? GameState.marriage.playerBId : GameState.marriage.playerAId;
+                    const partner = GameState.players.find(p => p.id === partnerId);
+                    if (partner && partner.status === 'ALIVE') {
+                        GameState.eventLog.unshift({
+                            round: GameState.currentRound, phase: 'DAY',
+                            text: `💍 Mazoon Marriage grief: Partner ${partner.name} dies alongside ${player.name}!`,
+                            timestamp: new Date().toLocaleTimeString()
+                        });
+                        NightResolutionEngine.killPlayerWithCascades(partner, 'MAZOON_MARRIAGE_GRIEF');
+                    }
+                }
+
+                // Hunter ability trigger check
+                if (player.roleId === 'hunter' && !GameState.specialAbilityState.hunterBulletUsed) {
+                    GameState.specialAbilityState.hunterBulletUsed = true;
+                    GameState.pendingHunterPlayer = player;
+                    GameState.phase = 'HUNTER_SHOT';
+                    GameState.eventLog.unshift({
+                        round: GameState.currentRound, phase: 'HUNTER_SHOT',
+                        text: `🎯 Hunter ${player.name} is eliminated and can take someone down with them!`,
+                        timestamp: new Date().toLocaleTimeString()
+                    });
+                    AppController.updateDashboard();
+                    return;
+                }
+
+                this.advanceToNextNight();
+            },
+
+            advanceToNextNight: function() {
+                if (WinChecker.triggerEndGameIfNeeded()) return;
+
+                GameState.phase = 'NIGHT';
+                GameState.currentRound++;
+                GameState.eventLog.unshift({
+                    round: GameState.currentRound, phase: 'NIGHT',
+                    text: `🌙 Night ${GameState.currentRound} has begun.`,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+
+                AppController.updateDashboard();
+            },
+
             renderHunterShotInterface: function() {
-                return `<div>Hunter Shot Interface Placeholder</div>`;
+                const hunter = GameState.pendingHunterPlayer;
+                const alivePlayers = GameState.players.filter(p => p.status === 'ALIVE');
+
+                return `
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between pb-2 border-b border-border">
+                            <div>
+                                <h4 class="font-bold text-text-primary text-sm sm:text-base flex items-center gap-2">
+                                    <i class="fa-solid fa-crosshairs text-primary"></i> Hunter Retaliation Shot
+                                </h4>
+                                <p class="text-xs text-text-secondary">Hunter <strong class="text-text-primary">${hunter ? hunter.name : ''}</strong> must fire their final bullet before leaving.</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-xs font-semibold text-text-secondary">Select Target for Hunter's Bullet:</label>
+                            <select id="input-hunter-target" class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-xl px-3.5 py-2.5 font-medium">
+                                <option value="">-- Select Target to Shoot --</option>
+                                ${alivePlayers.map(p => `<option value="${p.id}">${p.name} (${ROLE_DATABASE[p.roleId].name})</option>`).join('')}
+                            </select>
+
+                            <button onclick="VotingEngine.confirmHunterShot()" class="w-full bg-primary hover:bg-primary-hover text-secondary font-bold py-3.5 px-6 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-xs sm:text-sm uppercase tracking-wider touch-manipulation">
+                                <i class="fa-solid fa-gun"></i> Fire Hunter Bullet & Proceed
+                            </button>
+                        </div>
+                    </div>
+                `;
+            },
+
+            confirmHunterShot: function() {
+                const targetId = document.getElementById('input-hunter-target').value;
+                if (!targetId) {
+                    alert('Please select a target for the hunter or ensure game rules allow skipping if necessary.');
+                    return;
+                }
+
+                const target = GameState.players.find(p => p.id === targetId);
+                if (target && target.status === 'ALIVE') {
+                    GameState.eventLog.unshift({
+                        round: GameState.currentRound, phase: 'HUNTER_SHOT',
+                        text: `🎯 Hunter shot ${target.name} (${ROLE_DATABASE[target.roleId].name}) down as their final act!`,
+                        timestamp: new Date().toLocaleTimeString()
+                    });
+                    NightResolutionEngine.killPlayerWithCascades(target, 'HUNTER_BULLET');
+                }
+
+                GameState.pendingHunterPlayer = null;
+                this.advanceToNextNight();
             }
         };
     </script>
