@@ -1049,25 +1049,14 @@ tailwind.config = {
             getActiveSteps: function() {
                 const hasRole = (rId) => GameState.selectedRolesConfig[rId] > 0;
                 const steps = [];
-                
-                // 1. DOCTOR
-                if (hasRole('doctor')) steps.push({ id: 'doctor', name: 'Doctor Protection' });
-                // 2. SIR
-                if (hasRole('sir')) steps.push({ id: 'sir', name: 'Sir Investigation' });
-                // 3. ASSASSIN
-                if (hasRole('assassin')) steps.push({ id: 'assassin', name: 'Assassin Bullet' });
-                // 4. MAZOON (Night 1 only)
-                if (hasRole('mazoon') && GameState.currentRound === 1) steps.push({ id: 'mazoon', name: 'Mazoon Marriage' });
-                
-                // Other active roles according to game logic
-                if (hasRole('necro')) steps.push({ id: 'necro', name: 'Necro Revival' });
-                if (hasRole('bodyguard')) steps.push({ id: 'bodyguard', name: 'Bodyguard Protection' });
-                if (hasRole('town_crier')) steps.push({ id: 'town_crier', name: 'Town Crier Message' });
-
-                // FINAL TWO POSITIONS: SECOND LAST -> SPY, LAST -> BOSS / UNDERBOSS
                 if (hasRole('spy')) steps.push({ id: 'spy', name: 'SPY Investigation' });
                 if (hasRole('boss') || hasRole('underboss')) steps.push({ id: 'mafia', name: 'Mafia Kill' });
-
+                if (hasRole('necro')) steps.push({ id: 'necro', name: 'Necro Revival' });
+                if (hasRole('assassin')) steps.push({ id: 'assassin', name: 'Assassin Bullet' });
+                if (hasRole('bodyguard')) steps.push({ id: 'bodyguard', name: 'Bodyguard Protection' });
+                if (hasRole('town_crier')) steps.push({ id: 'town_crier', name: 'Town Crier Message' });
+                if (hasRole('mazoon') && GameState.currentRound === 1) steps.push({ id: 'mazoon', name: 'Mazoon Marriage' });
+                if (hasRole('sir') || hasRole('doctor')) steps.push({ id: 'sir_doc', name: 'Sir & Doctor Actions' });
                 steps.push({ id: 'resolve', name: 'Resolve Night' });
                 return steps;
             },
@@ -1084,352 +1073,167 @@ tailwind.config = {
                     case 'spy':
                         const validSpyTargets = alivePlayers.filter(p => p.roleId !== 'boss' && p.roleId !== 'underboss');
                         const spyDone = isCompleted('spy');
-                        if (spyDone) {
-                            const selectedPl = GameState.players.find(p => p.id === GameState.nightActions.spyTargetId);
-                            stepContentHtml = `
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between text-primary font-bold text-xs sm:text-sm">
-                                        <span class="flex items-center gap-2"><i class="fa-solid fa-eye"></i> SPY Investigation</span>
-                                        <span class="text-xs bg-success/20 text-success px-2 py-0.5 rounded font-mono">SPY — COMPLETED</span>
-                                    </div>
-                                    <div class="p-3 bg-surface border border-border rounded-xl flex items-center justify-between">
-                                        <div>
-                                            <span class="text-[11px] text-text-secondary">Selected Target:</span>
-                                            <div class="font-bold text-text-primary text-sm">${selectedPl ? selectedPl.name + ' (' + ROLE_DATABASE[selectedPl.roleId].name + ')' : 'None'}</div>
-                                        </div>
-                                        <button onclick="NightSequenceManager.editAction('spy')" class="px-3 py-1.5 bg-card hover:bg-border text-warning border border-warning/30 rounded-lg text-xs font-semibold transition touch-manipulation">
-                                            <i class="fa-solid fa-pen-to-square mr-1"></i> Change Selection
-                                        </button>
-                                    </div>
-                                    ${GameState.nightActions.spyTargetId ? `<div class="p-2 bg-primary/10 border border-primary/30 text-primary/80 text-xs rounded-lg"><strong>Result:</strong> Role is <span class="text-text-primary font-bold">${ROLE_DATABASE[selectedPl?.roleId]?.name}</span></div>` : ''}
+                        stepContentHtml = `
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between text-primary font-bold text-xs sm:text-sm">
+                                    <span class="flex items-center gap-2"><i class="fa-solid fa-eye"></i> SPY Investigation</span>
+                                    ${spyDone ? '<span class="text-xs bg-success/20 text-success px-2 py-0.5 rounded font-mono">SPY — COMPLETED</span>' : ''}
                                 </div>
-                            `;
-                        } else {
-                            stepContentHtml = `
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between text-primary font-bold text-xs sm:text-sm">
-                                        <span class="flex items-center gap-2"><i class="fa-solid fa-eye"></i> SPY Investigation</span>
-                                    </div>
-                                    <select id="input-spy-target" onchange="NightSequenceManager.autoCompleteSpy(this.value)" class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium">
-                                        <option value="">-- Select Target for SPY --</option>
-                                        ${validSpyTargets.map(p => `<option value="${p.id}" ${GameState.nightActions.spyTargetId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
-                                    </select>
-                                </div>
-                            `;
-                        }
+                                <select id="input-spy-target" ${spyDone ? 'disabled' : ''} class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium disabled:opacity-50">
+                                    <option value="">-- Select Target for SPY --</option>
+                                    ${validSpyTargets.map(p => `<option value="${p.id}" ${GameState.nightActions.spyTargetId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                                </select>
+                                <button onclick="NightSequenceManager.saveSpyAction()" ${spyDone ? 'disabled' : ''} class="w-full bg-primary hover:bg-primary-hover text-secondary font-bold text-xs py-2.5 rounded-lg transition touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed">Save SPY Action</button>
+                                ${GameState.nightActions.spyTargetId ? `<div class="p-2 bg-primary/10 border border-primary/30 text-primary/80 text-xs rounded-lg"><strong>Result:</strong> Role is <span class="text-text-primary font-bold">${ROLE_DATABASE[GameState.players.find(p=>p.id===GameState.nightActions.spyTargetId)?.roleId]?.name}</span></div>` : ''}
+                            </div>
+                        `;
                         break;
                     case 'mafia':
-                        const bossAlive = GameState.players.some(p => p.roleId === 'boss' && p.status === 'ALIVE');
-                        const underbossAlive = GameState.players.some(p => p.roleId === 'underboss' && p.status === 'ALIVE');
-                        let killerLabel = "Mafia Kill (Skipped)";
-                        if (bossAlive) killerLabel = "Boss Mafia Kill";
-                        else if (underbossAlive) killerLabel = "Underboss Mafia Kill (Boss Dead)";
-
                         const validMafiaTargets = alivePlayers.filter(p => p.roleId !== 'boss' && p.roleId !== 'underboss' && p.roleId !== 'spy');
                         const mafiaDone = isCompleted('mafia');
-                        
-                        if (!bossAlive && !underbossAlive) {
-                            stepContentHtml = `
-                                <div class="space-y-3 text-center py-4">
-                                    <div class="text-danger font-bold text-sm">Both Boss and Underboss are dead. Mafia kill action is skipped.</div>
-                                    <button onclick="NightSequenceManager.skipMafiaKill()" class="bg-primary hover:bg-primary-hover text-secondary font-bold text-xs py-2.5 px-4 rounded-lg transition touch-manipulation">Continue Next Step</button>
+                        stepContentHtml = `
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between text-primary font-bold text-xs sm:text-sm">
+                                    <span class="flex items-center gap-2"><i class="fa-solid fa-skull-crossbones"></i> Mafia Leader Target</span>
+                                    ${mafiaDone ? '<span class="text-xs bg-success/20 text-success px-2 py-0.5 rounded font-mono">Mafia — COMPLETED</span>' : ''}
                                 </div>
-                            `;
-                        } else if (mafiaDone) {
-                            const selectedPl = GameState.players.find(p => p.id === GameState.nightActions.mafiaTargetId);
-                            stepContentHtml = `
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between text-primary font-bold text-xs sm:text-sm">
-                                        <span class="flex items-center gap-2"><i class="fa-solid fa-skull-crossbones"></i> ${killerLabel}</span>
-                                        <span class="text-xs bg-success/20 text-success px-2 py-0.5 rounded font-mono">Mafia — COMPLETED</span>
-                                    </div>
-                                    <div class="p-3 bg-surface border border-border rounded-xl flex items-center justify-between">
-                                        <div>
-                                            <span class="text-[11px] text-text-secondary">Selected Target:</span>
-                                            <div class="font-bold text-text-primary text-sm">${selectedPl ? selectedPl.name + ' (' + ROLE_DATABASE[selectedPl.roleId].name + ')' : 'None'}</div>
-                                        </div>
-                                        <button onclick="NightSequenceManager.editAction('mafia')" class="px-3 py-1.5 bg-card hover:bg-border text-warning border border-warning/30 rounded-lg text-xs font-semibold transition touch-manipulation">
-                                            <i class="fa-solid fa-pen-to-square mr-1"></i> Change Selection
-                                        </button>
-                                    </div>
-                                </div>
-                            `;
-                        } else {
-                            stepContentHtml = `
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between text-primary font-bold text-xs sm:text-sm">
-                                        <span class="flex items-center gap-2"><i class="fa-solid fa-skull-crossbones"></i> ${killerLabel}</span>
-                                    </div>
-                                    <select id="input-mafia-target" onchange="NightSequenceManager.autoCompleteMafia(this.value)" class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium">
-                                        <option value="">-- Select Mafia Target --</option>
-                                        ${validMafiaTargets.map(p => `<option value="${p.id}" ${GameState.nightActions.mafiaTargetId === p.id ? 'selected' : ''}>${ROLE_DATABASE[p.roleId].name} (${p.name})</option>`).join('')}
-                                    </select>
-                                </div>
-                            `;
-                        }
+                                <select id="input-mafia-target" ${mafiaDone ? 'disabled' : ''} class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium disabled:opacity-50">
+                                    <option value="">-- Select Mafia Target --</option>
+                                    ${validMafiaTargets.map(p => `<option value="${p.id}" ${GameState.nightActions.mafiaTargetId === p.id ? 'selected' : ''}>${ROLE_DATABASE[p.roleId].name}</option>`).join('')}
+                                </select>
+                                <button onclick="NightSequenceManager.saveMafiaAction()" ${mafiaDone ? 'disabled' : ''} class="w-full bg-primary hover:bg-primary-hover text-secondary font-bold text-xs py-2.5 rounded-lg transition touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed">Save Mafia Target</button>
+                            </div>
+                        `;
                         break;
                     case 'necro':
                         const deadPlayers = GameState.players.filter(p => p.status === 'DEAD');
                         const necroDone = isCompleted('necro') || GameState.specialAbilityState.necroUsed;
-                        if (necroDone) {
-                            const selectedPl = GameState.players.find(p => p.id === GameState.nightActions.necroTargetId);
-                            stepContentHtml = `
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between text-primary font-bold text-xs sm:text-sm">
-                                        <span class="flex items-center gap-2"><i class="fa-solid fa-ghost"></i> Necro Revival</span>
-                                        <span class="text-xs bg-success/20 text-success px-2 py-0.5 rounded font-mono">Necro — COMPLETED</span>
-                                    </div>
-                                    <div class="p-3 bg-surface border border-border rounded-xl flex items-center justify-between">
-                                        <div>
-                                            <span class="text-[11px] text-text-secondary">Selected Target:</span>
-                                            <div class="font-bold text-text-primary text-sm">${selectedPl ? selectedPl.name + ' (' + ROLE_DATABASE[selectedPl.roleId].name + ')' : 'None (Skipped)'}</div>
-                                        </div>
-                                        <button onclick="NightSequenceManager.editAction('necro')" class="px-3 py-1.5 bg-card hover:bg-border text-warning border border-warning/30 rounded-lg text-xs font-semibold transition touch-manipulation">
-                                            <i class="fa-solid fa-pen-to-square mr-1"></i> Change Selection
-                                        </button>
-                                    </div>
+                        stepContentHtml = `
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between text-primary font-bold text-xs sm:text-sm">
+                                    <span class="flex items-center gap-2"><i class="fa-solid fa-ghost"></i> Necro Revival</span>
+                                    ${necroDone ? '<span class="text-xs bg-success/20 text-success px-2 py-0.5 rounded font-mono">Necro — COMPLETED</span>' : ''}
                                 </div>
-                            `;
-                        } else {
-                            stepContentHtml = `
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between text-primary font-bold text-xs sm:text-sm">
-                                        <span class="flex items-center gap-2"><i class="fa-solid fa-ghost"></i> Necro Revival</span>
-                                    </div>
-                                    <select id="input-necro-target" onchange="NightSequenceManager.autoCompleteNecro(this.value)" class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium">
-                                        <option value="">-- Select Dead Player (Or leave empty) --</option>
-                                        ${deadPlayers.map(p => `<option value="${p.id}" ${GameState.nightActions.necroTargetId === p.id ? 'selected' : ''}>${ROLE_DATABASE[p.roleId].name} (${p.name})</option>`).join('')}
-                                    </select>
-                                    <button onclick="NightSequenceManager.autoCompleteNecro(document.getElementById('input-necro-target').value)" class="w-full bg-primary hover:bg-primary-hover text-secondary font-bold text-xs py-2.5 rounded-lg transition touch-manipulation">Confirm Necro Action</button>
-                                </div>
-                            `;
-                        }
+                                <select id="input-necro-target" ${necroDone ? 'disabled' : ''} class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium disabled:opacity-50">
+                                    <option value="">-- Select Dead Player --</option>
+                                    ${deadPlayers.map(p => `<option value="${p.id}" ${GameState.nightActions.necroTargetId === p.id ? 'selected' : ''}>${ROLE_DATABASE[p.roleId].name}</option>`).join('')}
+                                </select>
+                                <button onclick="NightSequenceManager.saveNecroAction()" ${necroDone ? 'disabled' : ''} class="w-full bg-primary hover:bg-primary-hover text-secondary font-bold text-xs py-2.5 rounded-lg transition touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed">Save Necro Action</button>
+                            </div>
+                        `;
                         break;
                     case 'assassin':
                         const assassinDone = isCompleted('assassin') || GameState.specialAbilityState.assassinBulletUsed;
-                        if (assassinDone) {
-                            const selectedPl = GameState.players.find(p => p.id === GameState.nightActions.assassinTargetId);
-                            stepContentHtml = `
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between text-warning font-bold text-xs sm:text-sm">
-                                        <span class="flex items-center gap-2"><i class="fa-solid fa-crosshairs"></i> Assassin Bullet</span>
-                                        <span class="text-xs bg-success/20 text-success px-2 py-0.5 rounded font-mono">Assassin — COMPLETED</span>
-                                    </div>
-                                    <div class="p-3 bg-surface border border-border rounded-xl flex items-center justify-between">
-                                        <div>
-                                            <span class="text-[11px] text-text-secondary">Selected Action:</span>
-                                            <div class="font-bold text-text-primary text-sm">${GameState.nightActions.assassinUseBullet ? 'Shoot: ' + (selectedPl ? selectedPl.name + ' (' + ROLE_DATABASE[selectedPl.roleId].name + ')' : '') : 'No Bullet Used'}</div>
-                                        </div>
-                                        <button onclick="NightSequenceManager.editAction('assassin')" class="px-3 py-1.5 bg-card hover:bg-border text-warning border border-warning/30 rounded-lg text-xs font-semibold transition touch-manipulation">
-                                            <i class="fa-solid fa-pen-to-square mr-1"></i> Change Selection
-                                        </button>
-                                    </div>
+                        stepContentHtml = `
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between text-warning font-bold text-xs sm:text-sm">
+                                    <span class="flex items-center gap-2"><i class="fa-solid fa-crosshairs"></i> Assassin Bullet</span>
+                                    ${assassinDone ? '<span class="text-xs bg-success/20 text-success px-2 py-0.5 rounded font-mono">Assassin — COMPLETED</span>' : ''}
                                 </div>
-                            `;
-                        } else {
-                            stepContentHtml = `
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between text-warning font-bold text-xs sm:text-sm">
-                                        <span class="flex items-center gap-2"><i class="fa-solid fa-crosshairs"></i> Assassin Bullet</span>
-                                    </div>
-                                    <select id="input-assassin-use" onchange="document.getElementById('assassin-target-box').style.display = this.value === 'YES' ? 'block' : 'none'" class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium">
-                                        <option value="NO" ${!GameState.nightActions.assassinUseBullet ? 'selected' : ''}>NO BULLET</option>
-                                        <option value="YES" ${GameState.nightActions.assassinUseBullet ? 'selected' : ''}>YES (SHOOT)</option>
+                                <select id="input-assassin-use" ${assassinDone ? 'disabled' : ''} onchange="document.getElementById('assassin-target-box').style.display = this.value === 'YES' ? 'block' : 'none'" class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium disabled:opacity-50">
+                                    <option value="NO" ${!GameState.nightActions.assassinUseBullet ? 'selected' : ''}>NO BULLET</option>
+                                    <option value="YES" ${GameState.nightActions.assassinUseBullet ? 'selected' : ''}>YES (SHOOT)</option>
+                                </select>
+                                <div id="assassin-target-box" style="display: ${GameState.nightActions.assassinUseBullet ? 'block' : 'none'};">
+                                    <select id="input-assassin-target" ${assassinDone ? 'disabled' : ''} class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium mt-2 disabled:opacity-50">
+                                        <option value="">-- Select Target Role --</option>
+                                        ${alivePlayers.map(p => `<option value="${p.id}" ${GameState.nightActions.assassinTargetId === p.id ? 'selected' : ''}>${ROLE_DATABASE[p.roleId].name}</option>`).join('')}
                                     </select>
-                                    <div id="assassin-target-box" style="display: ${GameState.nightActions.assassinUseBullet ? 'block' : 'none'};">
-                                        <select id="input-assassin-target" class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium mt-2">
-                                            <option value="">-- Select Target Role --</option>
-                                            ${alivePlayers.map(p => `<option value="${p.id}" ${GameState.nightActions.assassinTargetId === p.id ? 'selected' : ''}>${ROLE_DATABASE[p.roleId].name} (${p.name})</option>`).join('')}
-                                        </select>
-                                    </div>
-                                    <button onclick="NightSequenceManager.saveAssassinAction()" class="w-full bg-warning hover:bg-warning/90 text-secondary font-bold text-xs py-2.5 rounded-lg transition touch-manipulation">Save Assassin Action</button>
                                 </div>
-                            `;
-                        }
+                                <button onclick="NightSequenceManager.saveAssassinAction()" ${assassinDone ? 'disabled' : ''} class="w-full bg-warning hover:bg-warning/90 text-secondary font-bold text-xs py-2.5 rounded-lg transition touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed">Save Assassin Action</button>
+                            </div>
+                        `;
                         break;
                     case 'bodyguard':
-                        const bgDone = isCompleted('bodyguard') || GameState.specialAbilityState.bodyguardProtectionUsed;
-                        if (bgDone) {
-                            const selectedPl = GameState.players.find(p => p.id === GameState.bodyguardPermanentTargetId);
-                            stepContentHtml = `
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between text-success font-bold text-xs sm:text-sm">
-                                        <span class="flex items-center gap-2"><i class="fa-solid fa-shield"></i> Bodyguard Protection</span>
-                                        <span class="text-xs bg-success/20 text-success px-2 py-0.5 rounded font-mono">Bodyguard — COMPLETED</span>
-                                    </div>
-                                    <div class="p-3 bg-surface border border-border rounded-xl flex items-center justify-between">
+                        const bgDone = GameState.specialAbilityState.bodyguardProtectionUsed;
+                        const currentProtectedPlayer = GameState.bodyguardPermanentTargetId ? GameState.players.find(p => p.id === GameState.bodyguardPermanentTargetId) : null;
+                        stepContentHtml = `
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between text-success font-bold text-xs sm:text-sm">
+                                    <span class="flex items-center gap-2"><i class="fa-solid fa-shield"></i> Bodyguard Protection</span>
+                                    ${bgDone ? '<span class="text-xs bg-success/20 text-success px-2 py-0.5 rounded font-mono">Bodyguard — COMPLETED</span>' : ''}
+                                </div>
+                                ${bgDone && currentProtectedPlayer ? `
+                                    <div class="bg-background border border-border p-3 rounded-xl flex items-center justify-between gap-3">
                                         <div>
-                                            <span class="text-[11px] text-text-secondary">Protected Target:</span>
-                                            <div class="font-bold text-text-primary text-sm">${selectedPl ? selectedPl.name + ' (' + ROLE_DATABASE[selectedPl.roleId].name + ')' : 'None'}</div>
+                                            <div class="text-[10px] font-mono text-text-secondary uppercase">Protected Target:</div>
+                                            <div class="font-bold text-text-primary text-sm">${currentProtectedPlayer.name} <span class="text-xs font-mono text-text-secondary">(${ROLE_DATABASE[currentProtectedPlayer.roleId]?.name || 'Unknown'})</span></div>
                                         </div>
-                                        <button onclick="NightSequenceManager.editAction('bodyguard')" class="px-3 py-1.5 bg-card hover:bg-border text-warning border border-warning/30 rounded-lg text-xs font-semibold transition touch-manipulation">
-                                            <i class="fa-solid fa-pen-to-square mr-1"></i> Change Selection
+                                        <button onclick="NightSequenceManager.changeBodyguardSelection()" class="bg-card hover:bg-border text-warning border border-warning/30 font-bold text-xs px-3 py-2 rounded-lg transition flex items-center gap-1.5 touch-manipulation">
+                                            <i class="fa-solid fa-rotate-left"></i> CHANGE SELECTION
                                         </button>
                                     </div>
-                                </div>
-                            `;
-                        } else {
-                            stepContentHtml = `
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between text-success font-bold text-xs sm:text-sm">
-                                        <span class="flex items-center gap-2"><i class="fa-solid fa-shield"></i> Bodyguard Protection</span>
-                                    </div>
+                                ` : `
                                     <select id="input-bg-target" class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium">
                                         <option value="">-- Select Role to Protect Permanently --</option>
-                                        ${alivePlayers.map(p => `<option value="${p.id}" ${GameState.bodyguardPermanentTargetId === p.id ? 'selected' : ''}>${ROLE_DATABASE[p.roleId].name} (${p.name})</option>`).join('')}
+                                        ${alivePlayers.map(p => `<option value="${p.id}" ${GameState.bodyguardPermanentTargetId === p.id ? 'selected' : ''}>${p.name} (${ROLE_DATABASE[p.roleId].name})</option>`).join('')}
                                     </select>
                                     <button onclick="NightSequenceManager.saveBodyguardAction()" class="w-full bg-success hover:bg-success/90 text-secondary font-bold text-xs py-2.5 rounded-lg transition touch-manipulation">Lock Bodyguard Protection</button>
-                                </div>
-                            `;
-                        }
+                                `}
+                            </div>
+                        `;
                         break;
                     case 'town_crier':
                         const tcDone = isCompleted('town_crier');
-                        if (tcDone) {
-                            stepContentHtml = `
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between text-primary font-bold text-xs sm:text-sm">
-                                        <span class="flex items-center gap-2"><i class="fa-solid fa-bullhorn"></i> Town Crier Message</span>
-                                        <span class="text-xs bg-success/20 text-success px-2 py-0.5 rounded font-mono">Town Crier — COMPLETED</span>
-                                    </div>
-                                    <div class="p-3 bg-surface border border-border rounded-xl flex items-center justify-between">
-                                        <div>
-                                            <span class="text-[11px] text-text-secondary">Message:</span>
-                                            <div class="font-bold text-text-primary text-sm">"${GameState.nightActions.townCrierMsgText || '(None)'}"</div>
-                                        </div>
-                                        <button onclick="NightSequenceManager.editAction('town_crier')" class="px-3 py-1.5 bg-card hover:bg-border text-warning border border-warning/30 rounded-lg text-xs font-semibold transition touch-manipulation">
-                                            <i class="fa-solid fa-pen-to-square mr-1"></i> Change Selection
-                                        </button>
-                                    </div>
+                        stepContentHtml = `
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between text-primary font-bold text-xs sm:text-sm">
+                                    <span class="flex items-center gap-2"><i class="fa-solid fa-bullhorn"></i> Town Crier Message</span>
+                                    ${tcDone ? '<span class="text-xs bg-success/20 text-success px-2 py-0.5 rounded font-mono">Town Crier — COMPLETED</span>' : ''}
                                 </div>
-                            `;
-                        } else {
-                            stepContentHtml = `
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between text-primary font-bold text-xs sm:text-sm">
-                                        <span class="flex items-center gap-2"><i class="fa-solid fa-bullhorn"></i> Town Crier Message</span>
-                                    </div>
-                                    <textarea id="input-tc-msg" rows="2" placeholder="Anonymous morning message..." class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg p-2.5">${GameState.nightActions.townCrierMsgText || ''}</textarea>
-                                    <button onclick="NightSequenceManager.saveTownCrierAction()" class="w-full bg-primary hover:bg-primary-hover text-secondary font-bold text-xs py-2.5 rounded-lg transition touch-manipulation">Save Message</button>
-                                </div>
-                            `;
-                        }
+                                <textarea id="input-tc-msg" ${tcDone ? 'disabled' : ''} rows="2" placeholder="Anonymous morning message..." class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg p-2.5 disabled:opacity-50">${GameState.nightActions.townCrierMsgText || ''}</textarea>
+                                <button onclick="NightSequenceManager.saveTownCrierAction()" ${tcDone ? 'disabled' : ''} class="w-full bg-primary hover:bg-primary-hover text-secondary font-bold text-xs py-2.5 rounded-lg transition touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed">Save Message</button>
+                            </div>
+                        `;
                         break;
                     case 'mazoon':
                         const mazoonDone = isCompleted('mazoon') || GameState.specialAbilityState.mazoonMarriageUsed;
-                        if (mazoonDone) {
-                            const plA = GameState.players.find(p => p.id === GameState.marriage.playerAId);
-                            const plB = GameState.players.find(p => p.id === GameState.marriage.playerBId);
-                            stepContentHtml = `
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between text-success font-bold text-xs sm:text-sm">
-                                        <span class="flex items-center gap-2"><i class="fa-solid fa-ring"></i> Mazoon Marriage (Night 1)</span>
-                                        <span class="text-xs bg-success/20 text-success px-2 py-0.5 rounded font-mono">Mazoon — COMPLETED</span>
-                                    </div>
-                                    <div class="p-3 bg-surface border border-border rounded-xl flex items-center justify-between">
-                                        <div>
-                                            <span class="text-[11px] text-text-secondary">Married Couple:</span>
-                                            <div class="font-bold text-text-primary text-sm">${plA && plB ? plA.name + ' & ' + plB.name : 'None'}</div>
-                                        </div>
-                                        <button onclick="NightSequenceManager.editAction('mazoon')" class="px-3 py-1.5 bg-card hover:bg-border text-warning border border-warning/30 rounded-lg text-xs font-semibold transition touch-manipulation">
-                                            <i class="fa-solid fa-pen-to-square mr-1"></i> Change Selection
-                                        </button>
-                                    </div>
+                        stepContentHtml = `
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between text-success font-bold text-xs sm:text-sm">
+                                    <span class="flex items-center gap-2"><i class="fa-solid fa-ring"></i> Mazoon Marriage (Night 1)</span>
+                                    ${mazoonDone ? '<span class="text-xs bg-success/20 text-success px-2 py-0.5 rounded font-mono">Mazoon — COMPLETED</span>' : ''}
                                 </div>
-                            `;
-                        } else {
-                            stepContentHtml = `
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between text-success font-bold text-xs sm:text-sm">
-                                        <span class="flex items-center gap-2"><i class="fa-solid fa-ring"></i> Mazoon Marriage (Night 1)</span>
-                                    </div>
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        <select id="input-mazoon-a" class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium">
-                                            <option value="">-- Player A --</option>
-                                            ${alivePlayers.map(p => `<option value="${p.id}" ${GameState.nightActions.mazoonPlayerAId === p.id ? 'selected' : ''}>${p.name} (${ROLE_DATABASE[p.roleId].name})</option>`).join('')}
-                                        </select>
-                                        <select id="input-mazoon-b" class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium">
-                                            <option value="">-- Player B --</option>
-                                            ${alivePlayers.map(p => `<option value="${p.id}" ${GameState.nightActions.mazoonPlayerBId === p.id ? 'selected' : ''}>${p.name} (${ROLE_DATABASE[p.roleId].name})</option>`).join('')}
-                                        </select>
-                                    </div>
-                                    <button onclick="NightSequenceManager.saveMazoonAction()" class="w-full bg-success hover:bg-success/90 text-secondary font-bold text-xs py-2.5 rounded-lg transition touch-manipulation">Confirm Marriage</button>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <select id="input-mazoon-a" ${mazoonDone ? 'disabled' : ''} class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium disabled:opacity-50">
+                                        <option value="">-- Role A --</option>
+                                        ${alivePlayers.map(p => `<option value="${p.id}" ${GameState.nightActions.mazoonPlayerAId === p.id ? 'selected' : ''}>${ROLE_DATABASE[p.roleId].name}</option>`).join('')}
+                                    </select>
+                                    <select id="input-mazoon-b" ${mazoonDone ? 'disabled' : ''} class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium disabled:opacity-50">
+                                        <option value="">-- Role B --</option>
+                                        ${alivePlayers.map(p => `<option value="${p.id}" ${GameState.nightActions.mazoonPlayerBId === p.id ? 'selected' : ''}>${ROLE_DATABASE[p.roleId].name}</option>`).join('')}
+                                    </select>
                                 </div>
-                            `;
-                        }
+                                <button onclick="NightSequenceManager.saveMazoonAction()" ${mazoonDone ? 'disabled' : ''} class="w-full bg-success hover:bg-success/90 text-secondary font-bold text-xs py-2.5 rounded-lg transition touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed">Confirm Marriage</button>
+                            </div>
+                        `;
                         break;
-                    case 'sir':
+                    case 'sir_doc':
                         const sirDone = isCompleted('sir');
-                        if (sirDone) {
-                            const selectedPl = GameState.players.find(p => p.id === GameState.nightActions.sirTargetId);
-                            const investigatedRole = selectedPl ? ROLE_DATABASE[selectedPl.roleId] : null;
-                            const alignmentResult = investigatedRole ? investigatedRole.alignment : 'UNKNOWN';
-                            stepContentHtml = `
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between text-primary font-bold text-xs sm:text-sm">
-                                        <span class="flex items-center gap-2"><i class="fa-solid fa-magnifying-glass"></i> Sir Investigation</span>
-                                        <span class="text-xs bg-success/20 text-success px-2 py-0.5 rounded font-mono">Sir — COMPLETED</span>
-                                    </div>
-                                    <div class="p-3 bg-surface border border-border rounded-xl flex items-center justify-between">
-                                        <div>
-                                            <span class="text-[11px] text-text-secondary">Selected Target:</span>
-                                            <div class="font-bold text-text-primary text-sm">${selectedPl ? selectedPl.name + ' (' + ROLE_DATABASE[selectedPl.roleId].name + ')' : 'None'}</div>
-                                        </div>
-                                        <button onclick="NightSequenceManager.editAction('sir')" class="px-3 py-1.5 bg-card hover:bg-border text-warning border border-warning/30 rounded-lg text-xs font-semibold transition touch-manipulation">
-                                            <i class="fa-solid fa-pen-to-square mr-1"></i> Change Selection
-                                        </button>
-                                    </div>
-                                    ${GameState.nightActions.sirTargetId ? `<div class="p-2 bg-primary/10 border border-primary/30 text-primary/80 text-xs rounded-lg"><strong>Result:</strong> Investigation returns <span class="text-text-primary font-bold">${alignmentResult}</span></div>` : ''}
-                                </div>
-                            `;
-                        } else {
-                            stepContentHtml = `
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between text-primary font-bold text-xs sm:text-sm">
-                                        <span class="flex items-center gap-2"><i class="fa-solid fa-magnifying-glass"></i> Sir Investigation</span>
-                                    </div>
-                                    <select id="input-sir-target" onchange="NightSequenceManager.autoCompleteSir(this.value)" class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium">
-                                        <option value="">-- Select Target Role --</option>
-                                        ${alivePlayers.map(p => `<option value="${p.id}" ${GameState.nightActions.sirTargetId === p.id ? 'selected' : ''}>${ROLE_DATABASE[p.roleId].name} (${p.name})</option>`).join('')}
-                                    </select>
-                                </div>
-                            `;
-                        }
-                        break;
-                    case 'doctor':
                         const docDone = isCompleted('doctor');
-                        if (docDone) {
-                            const selectedPl = GameState.players.find(p => p.id === GameState.nightActions.doctorTargetId);
-                            stepContentHtml = `
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between text-success font-bold text-xs sm:text-sm">
-                                        <span class="flex items-center gap-2"><i class="fa-solid fa-stethoscope"></i> Doctor Protection</span>
-                                        <span class="text-xs bg-success/20 text-success px-2 py-0.5 rounded font-mono">Doctor — COMPLETED</span>
+                        stepContentHtml = `
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-2 text-primary font-bold text-xs sm:text-sm"><i class="fa-solid fa-magnifying-glass"></i> Sir & Doctor</div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div class="bg-surface p-2.5 rounded-xl border border-border space-y-2">
+                                        <div class="flex justify-between items-center"><label class="block text-[11px] font-bold text-primary">Sir Investigation:</label>${sirDone ? '<span class="text-[10px] bg-success/20 text-success px-1 rounded font-mono">COMPLETED</span>' : ''}</div>
+                                        <select id="input-sir-target" ${sirDone ? 'disabled' : ''} class="w-full bg-background border border-border text-xs text-text-primary rounded-lg px-2.5 py-2 font-medium disabled:opacity-50">
+                                            <option value="">-- Select Target Role --</option>
+                                            ${alivePlayers.map(p => `<option value="${p.id}" ${GameState.nightActions.sirTargetId === p.id ? 'selected' : ''}>${ROLE_DATABASE[p.roleId].name}</option>`).join('')}
+                                        </select>
+                                        <button onclick="NightSequenceManager.saveSirAction()" ${sirDone ? 'disabled' : ''} class="w-full bg-primary hover:bg-primary-hover text-secondary font-bold text-[11px] py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">Save Sir</button>
                                     </div>
-                                    <div class="p-3 bg-surface border border-border rounded-xl flex items-center justify-between">
-                                        <div>
-                                            <span class="text-[11px] text-text-secondary">Protected Target:</span>
-                                            <div class="font-bold text-text-primary text-sm">${selectedPl ? selectedPl.name + ' (' + ROLE_DATABASE[selectedPl.roleId].name + ')' : 'None'}</div>
-                                        </div>
-                                        <button onclick="NightSequenceManager.editAction('doctor')" class="px-3 py-1.5 bg-card hover:bg-border text-warning border border-warning/30 rounded-lg text-xs font-semibold transition touch-manipulation">
-                                            <i class="fa-solid fa-pen-to-square mr-1"></i> Change Selection
-                                        </button>
+                                    <div class="bg-surface p-2.5 rounded-xl border border-border space-y-2">
+                                        <div class="flex justify-between items-center"><label class="block text-[11px] font-bold text-success">Doctor Protection:</label>${docDone ? '<span class="text-[10px] bg-success/20 text-success px-1 rounded font-mono">COMPLETED</span>' : ''}</div>
+                                        <select id="input-doc-target" ${docDone ? 'disabled' : ''} class="w-full bg-background border border-border text-xs text-text-primary rounded-lg px-2.5 py-2 font-medium disabled:opacity-50">
+                                            <option value="">-- Select Target Role --</option>
+                                            ${alivePlayers.map(p => `<option value="${p.id}" ${GameState.nightActions.doctorTargetId === p.id ? 'selected' : ''}>${ROLE_DATABASE[p.roleId].name}</option>`).join('')}
+                                        </select>
+                                        <button onclick="NightSequenceManager.saveDoctorAction()" ${docDone ? 'disabled' : ''} class="w-full bg-success hover:bg-success/90 text-secondary font-bold text-[11px] py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">Save Doctor</button>
                                     </div>
                                 </div>
-                            `;
-                        } else {
-                            stepContentHtml = `
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between text-success font-bold text-xs sm:text-sm">
-                                        <span class="flex items-center gap-2"><i class="fa-solid fa-stethoscope"></i> Doctor Protection</span>
-                                    </div>
-                                    <select id="input-doc-target" onchange="NightSequenceManager.autoCompleteDoctor(this.value)" class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium">
-                                        <option value="">-- Select Target Role --</option>
-                                        ${alivePlayers.map(p => `<option value="${p.id}" ${GameState.nightActions.doctorTargetId === p.id ? 'selected' : ''}>${ROLE_DATABASE[p.roleId].name} (${p.name})</option>`).join('')}
-                                    </select>
-                                </div>
-                            `;
-                        }
+                            </div>
+                        `;
                         break;
                     case 'resolve':
                         stepContentHtml = `
@@ -1464,69 +1268,55 @@ tailwind.config = {
             },
             prevStep: function() { if (GameState.nightSequenceStep > 0) { GameState.nightSequenceStep--; AppController.updateDashboard(); } },
             skipOrNextStep: function() { this.nextStep(); },
-            
-            editAction: function(roleKey) {
-                GameState.completedNightActions[`${GameState.currentRound}_${roleKey}`] = false;
-                AppController.updateDashboard();
-            },
-
-            autoCompleteSpy: function(targetId) {
-                if (!targetId) return;
+            saveSpyAction: function() {
+                const targetId = document.getElementById('input-spy-target').value;
+                if(!targetId) { alert('Please select a target.'); return; }
                 GameState.nightActions.spyTargetId = targetId;
                 GameState.completedNightActions[`${GameState.currentRound}_spy`] = true;
-                AppController.updateDashboard();
+                alert('SPY action recorded and locked.'); AppController.updateDashboard();
             },
-            autoCompleteMafia: function(targetId) {
-                if (!targetId) return;
-                GameState.nightActions.mafiaTargetId = targetId;
+            saveMafiaAction: function() {
+                const val = document.getElementById('input-mafia-target').value;
+                if (!val) { alert('Please select a target.'); return; }
+                GameState.nightActions.mafiaTargetId = val;
                 GameState.completedNightActions[`${GameState.currentRound}_mafia`] = true;
-                AppController.updateDashboard();
+                alert('Mafia target recorded and locked.'); AppController.updateDashboard();
             },
-            skipMafiaKill: function() {
-                GameState.nightActions.mafiaTargetId = null;
-                GameState.completedNightActions[`${GameState.currentRound}_mafia`] = true;
-                AppController.updateDashboard();
-            },
-            autoCompleteNecro: function(targetId) {
+            saveNecroAction: function() {
+                const targetId = document.getElementById('input-necro-target').value;
                 GameState.nightActions.necroTargetId = targetId;
                 GameState.completedNightActions[`${GameState.currentRound}_necro`] = true;
-                AppController.updateDashboard();
+                alert('Necro action recorded and locked.'); AppController.updateDashboard();
             },
-            autoCompleteSir: function(targetId) {
-                if (!targetId) return;
-                GameState.nightActions.sirTargetId = targetId;
-                GameState.completedNightActions[`${GameState.currentRound}_sir`] = true;
-                AppController.updateDashboard();
-            },
-            autoCompleteDoctor: function(targetId) {
-                if (!targetId) return;
-                GameState.nightActions.doctorTargetId = targetId;
-                GameState.completedNightActions[`${GameState.currentRound}_doctor`] = true;
-                AppController.updateDashboard();
-            },
-
             saveAssassinAction: function() {
                 const use = document.getElementById('input-assassin-use').value === 'YES';
                 GameState.nightActions.assassinUseBullet = use;
                 GameState.nightActions.assassinTargetId = use ? document.getElementById('input-assassin-target').value : null;
                 GameState.completedNightActions[`${GameState.currentRound}_assassin`] = true;
-                AppController.updateDashboard();
+                alert('Assassin action recorded and locked.'); AppController.updateDashboard();
             },
             saveBodyguardAction: function() {
                 const val = document.getElementById('input-bg-target').value;
-                if (val) {
-                    GameState.bodyguardPermanentTargetId = val;
-                    GameState.specialAbilityState.bodyguardProtectionUsed = true;
-                    GameState.completedNightActions[`${GameState.currentRound}_bodyguard`] = true;
-                    AppController.updateDashboard();
+                if (!val) { alert('Please select a target.'); return; }
+                GameState.bodyguardPermanentTargetId = val;
+                GameState.specialAbilityState.bodyguardProtectionUsed = true;
+                GameState.completedNightActions[`${GameState.currentRound}_bodyguard`] = true;
+                AppController.updateDashboard();
+            },
+            changeBodyguardSelection: function() {
+                GameState.bodyguardPermanentTargetId = null;
+                GameState.specialAbilityState.bodyguardProtectionUsed = false;
+                if (GameState.completedNightActions) {
+                    delete GameState.completedNightActions[`${GameState.currentRound}_bodyguard`];
                 }
+                AppController.updateDashboard();
             },
             saveTownCrierAction: function() {
                 const val = document.getElementById('input-tc-msg').value.trim();
                 GameState.nightActions.townCrierMsgText = val;
                 if (val) GameState.townCrierMessages[GameState.currentRound] = val;
                 GameState.completedNightActions[`${GameState.currentRound}_town_crier`] = true;
-                AppController.updateDashboard();
+                alert('Town Crier message recorded and locked.'); AppController.updateDashboard();
             },
             saveMazoonAction: function() {
                 const a = document.getElementById('input-mazoon-a').value;
@@ -1535,7 +1325,21 @@ tailwind.config = {
                 GameState.marriage = { active: true, playerAId: a, playerBId: b };
                 GameState.specialAbilityState.mazoonMarriageUsed = true;
                 GameState.completedNightActions[`${GameState.currentRound}_mazoon`] = true;
-                AppController.updateDashboard();
+                alert('Mazoon marriage established and locked!'); AppController.updateDashboard();
+            },
+            saveSirAction: function() {
+                const targetId = document.getElementById('input-sir-target').value;
+                if(!targetId) { alert('Please select a target.'); return; }
+                GameState.nightActions.sirTargetId = targetId;
+                GameState.completedNightActions[`${GameState.currentRound}_sir`] = true;
+                alert('Sir action recorded and locked.'); AppController.updateDashboard();
+            },
+            saveDoctorAction: function() {
+                const targetId = document.getElementById('input-doc-target').value;
+                if(!targetId) { alert('Please select a target.'); return; }
+                GameState.nightActions.doctorTargetId = targetId;
+                GameState.completedNightActions[`${GameState.currentRound}_doctor`] = true;
+                alert('Doctor action recorded and locked.'); AppController.updateDashboard();
             }
         };
 
@@ -1622,17 +1426,13 @@ tailwind.config = {
                 let mafiaTargetId = GameState.nightActions.mafiaTargetId;
                 let doctorTargetId = GameState.nightActions.doctorTargetId;
                 
-                const bossAlive = GameState.players.some(p => p.roleId === 'boss' && p.status === 'ALIVE');
-                const underbossAlive = GameState.players.some(p => p.roleId === 'underboss' && p.status === 'ALIVE');
-                const canKill = (bossAlive || underbossAlive);
-
-                if (mafiaTargetId && canKill) {
+                if (mafiaTargetId && (GameState.selectedRolesConfig['boss'] > 0 || GameState.selectedRolesConfig['underboss'] > 0)) {
                     const targetPlayer = GameState.players.find(p => p.id === mafiaTargetId);
                     const bodyguardPlayer = GameState.players.find(p => p.roleId === 'bodyguard' && p.status === 'ALIVE');
 
                     if (targetPlayer && targetPlayer.status === 'ALIVE') {
                         if (targetPlayer.roleId === 'king') {
-                            roundLogs.push(`Mafia targeted King, but King is immune!`);
+                            roundLogs.push(`Boss targeted King, but King is immune!`);
                         } else if (doctorTargetId === mafiaTargetId && GameState.selectedRolesConfig['doctor'] > 0) {
                             roundLogs.push(`Doctor protected ${ROLE_DATABASE[targetPlayer.roleId]?.name || 'Player'}`);
                         } else if (GameState.bodyguardPermanentTargetId === mafiaTargetId && bodyguardPlayer && GameState.selectedRolesConfig['bodyguard'] > 0) {
@@ -1640,7 +1440,7 @@ tailwind.config = {
                             roundLogs.push(`Bodyguard sacrificed himself to protect ${ROLE_DATABASE[targetPlayer.roleId]?.name || 'Player'}`);
                         } else {
                             DeathResolutionEngine.resolveDeath(targetPlayer, 'Boss', round);
-                            roundLogs.push(`${ROLE_DATABASE[targetPlayer.roleId]?.name || 'Player'} — DEAD\nCause: Mafia Kill`);
+                            roundLogs.push(`${ROLE_DATABASE[targetPlayer.roleId]?.name || 'Player'} — DEAD\nCause: Boss`);
                         }
                     }
                 } else {
@@ -1710,7 +1510,7 @@ tailwind.config = {
                         </div>
                         <select id="input-hunter-target" class="w-full bg-surface border border-border text-xs sm:text-sm text-text-primary rounded-lg px-3 py-2 font-medium">
                             <option value="">-- Select Target Role to Shoot --</option>
-                            ${alivePlayers.map(p => `<option value="${p.id}">${ROLE_DATABASE[p.roleId].name} (${p.name})</option>`).join('')}
+                            ${alivePlayers.map(p => `<option value="${p.id}">${ROLE_DATABASE[p.roleId].name}</option>`).join('')}
                         </select>
                         <button onclick="VotingEngine.confirmHunterShot()" class="w-full bg-primary hover:bg-primary-hover text-secondary font-bold py-3 px-4 rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-xs sm:text-sm uppercase tracking-wider touch-manipulation">
                             <i class="fa-solid fa-skull"></i> Fire Hunter Shot
@@ -1926,4 +1726,3 @@ tailwind.config = {
     </script>
 </body>
 </html>
-```[cite: 1]
